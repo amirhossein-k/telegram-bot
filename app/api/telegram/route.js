@@ -1,3 +1,4 @@
+// D:\prject\telegram\telegram-bot\app\api\
 import { Telegraf } from "telegraf";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -16,3 +17,7 @@ export async function POST(req) {
     return new Response("error", { status: 500 });
   }
 }
+
+// https://telegram-bot-six-liard.vercel.app/
+
+// https://api.telegram.org/bot8005021181:AAEgmDydamItRUvKR2ayP-pVTR848AQaHbs/setWebhook?url=https://telegram-bot-six-liard.vercel.app/telegram
