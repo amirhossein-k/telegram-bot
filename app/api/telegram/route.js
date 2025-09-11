@@ -3,21 +3,24 @@ import { Telegraf } from "telegraf";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// دستورات تستی
-bot.start((ctx) => ctx.reply("سلام 👋 رباتت روشن شد!"));
+// هر پیامی بیاد، متنش رو برگردون
+bot.on("text", (ctx) => {
+  console.log("📩 Message received:", ctx.message.text);
+  ctx.reply(`پیام شما دریافت شد ✅: ${ctx.message.text}`);
+});
+
+// دستور /start
+bot.start((ctx) => ctx.reply("سلام 👋 ربات آماده‌ست"));
+
+// دستور /ping
 bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 
 export async function POST(req) {
   try {
     const body = await req.json();
 
-    // لاگ‌گیری برای بررسی درخواست‌ها
-    console.log(
-      "📩 Update received from Telegram:",
-      JSON.stringify(body, null, 2)
-    );
+    console.log("📩 Update from Telegram:", JSON.stringify(body, null, 2));
 
-    // پردازش پیام‌ها توسط telegraf
     await bot.handleUpdate(body);
 
     return new Response("ok");
@@ -27,7 +30,7 @@ export async function POST(req) {
   }
 }
 
-// برای تست دستی با مرورگر یا Postman
+// فقط برای تست دستی
 export async function GET() {
   return new Response("✅ Telegram Webhook is running");
 }
