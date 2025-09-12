@@ -5,29 +5,33 @@ import { MongoClient } from "mongodb";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// تنظیم MongoDB برای session
-const client = new MongoClient(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// اتصال MongoDB فقط یک بار (lazy-init)
+let mongoInitialized = false;
+let client;
 
 async function setupMongoSession() {
+  if (mongoInitialized) return;
+
   try {
+    client = new MongoClient(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
     await client.connect();
     const db = client.db();
     const session = new MongoSession(db, { collectionName: "sessions" });
     bot.use(session.middleware());
+
+    mongoInitialized = true;
     console.log("✅ MongoDB connected for sessions");
   } catch (err) {
     console.error("❌ Error connecting to MongoDB:", err);
   }
 }
 
-setupMongoSession();
-
 // دستور /start
 bot.start((ctx) => {
-  console.log("📩 Command /start received from:", ctx.from);
   ctx.session.waitingForPhoto = false; // ریست session
   ctx.reply("خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", {
     reply_markup: {
@@ -40,19 +44,16 @@ bot.start((ctx) => {
 
 // دستور /buttons
 bot.command("buttons", (ctx) => {
-  console.log("📩 Command /buttons received from:", ctx.from);
-  const markup = {
+  ctx.reply("یک گزینه انتخاب کنید:", {
     reply_markup: {
       inline_keyboard: [
         [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
       ],
     },
-  };
-  console.log("Markup:", JSON.stringify(markup, null, 2));
-  ctx.reply("یک گزینه انتخاب کنید:", markup);
+  });
 });
 
-// وقتی کاربر دکمه آپلود عکس رو زد
+// هندل کردن callback ها
 bot.on("callback_query", async (ctx) => {
   const data = ctx.callbackQuery?.data;
 
@@ -61,8 +62,6 @@ bot.on("callback_query", async (ctx) => {
     return ctx.answerCbQuery();
   }
 
-  console.log("Callback received:", data);
-
   if (data === "upload_photo") {
     ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
@@ -70,6 +69,7 @@ bot.on("callback_query", async (ctx) => {
 
   ctx.answerCbQuery();
 });
+
 // وقتی عکس ارسال شد
 bot.on("photo", async (ctx) => {
   if (!ctx.session.waitingForPhoto) {
@@ -82,7 +82,6 @@ bot.on("photo", async (ctx) => {
   try {
     const file = await ctx.telegram.getFile(fileId);
     const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
-    console.log("File URL:", fileUrl);
 
     ctx.reply("⏳ در حال آپلود عکس...");
 
@@ -119,8 +118,10 @@ bot.on("photo", async (ctx) => {
 // دستور تست
 bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 
+// هندلینگ درخواست‌ها
 export async function POST(req) {
   try {
+    await setupMongoSession(); // ← init در زمان اولین request
     const body = await req.json();
     await bot.handleUpdate(body);
     return new Response("ok");
@@ -132,6 +133,7 @@ export async function POST(req) {
 
 export async function GET() {
   try {
+    await setupMongoSession(); // ← init اینجا هم
     await bot.telegram.setWebhook(
       `${process.env.NEXT_PUBLIC_URL}/api/telegram`
     );
