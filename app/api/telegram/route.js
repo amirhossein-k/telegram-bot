@@ -54,12 +54,20 @@ bot.command("buttons", (ctx) => {
 
 // وقتی کاربر دکمه آپلود عکس رو زد
 bot.on("callback_query", async (ctx) => {
-  console.log("Callback received:", ctx.callbackQuery.data);
-  if (ctx.callbackQuery.data === "upload_photo") {
+  const data = ctx.callbackQuery?.data;
+
+  if (!data) {
+    console.log("❌ callback_query بدون data دریافت شد");
+    return ctx.answerCbQuery();
+  }
+
+  console.log("Callback received:", data);
+
+  if (data === "upload_photo") {
     ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
-  } else if (ctx.callbackQuery.data.startsWith("delete_")) {
-    const key = ctx.callbackQuery.data.replace("delete_", "");
+  } else if (data.startsWith("delete_")) {
+    const key = data.replace("delete_", "");
     try {
       const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
         method: "DELETE",
@@ -77,9 +85,9 @@ bot.on("callback_query", async (ctx) => {
       ctx.reply("❌ خطا در حذف عکس");
     }
   }
+
   ctx.answerCbQuery();
 });
-
 // وقتی عکس ارسال شد
 bot.on("photo", async (ctx) => {
   if (!ctx.session.waitingForPhoto) {
