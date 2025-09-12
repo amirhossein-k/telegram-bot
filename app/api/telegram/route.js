@@ -66,24 +66,6 @@ bot.on("callback_query", async (ctx) => {
   if (data === "upload_photo") {
     ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
-  } else if (data.startsWith("delete_")) {
-    const key = data.replace("delete_", "");
-    try {
-      const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
-        method: "DELETE",
-        body: JSON.stringify({ key }),
-        headers: { "Content-Type": "application/json" },
-      });
-      const result = await res.json();
-      if (result.success) {
-        ctx.reply("🗑 عکس با موفقیت حذف شد!");
-      } else {
-        ctx.reply("❌ خطا در حذف عکس");
-      }
-    } catch (err) {
-      console.error("❌ Error deleting:", err);
-      ctx.reply("❌ خطا در حذف عکس");
-    }
   }
 
   ctx.answerCbQuery();
