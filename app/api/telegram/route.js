@@ -1,15 +1,32 @@
-// app/api/telegram/route.js
 import { Telegraf } from "telegraf";
-import LocalSession from "telegraf-session-local";
+import { MongoClient } from "mongodb";
+import MongoSession from "telegraf-session-mongo";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// ذخیره session در فایل JSON روی سرور
-bot.use(new LocalSession({ database: "sessions.json" }).middleware());
+let mongoInitialized = false;
+let client;
+
+async function setupMongoSession() {
+  if (mongoInitialized) return;
+
+  try {
+    client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
+
+    const db = client.db();
+    bot.use(new MongoSession(db, { collectionName: "sessions" }).middleware());
+
+    mongoInitialized = true;
+    console.log("✅ MongoDB connected for sessions");
+  } catch (err) {
+    console.error("❌ Error connecting to MongoDB:", err);
+  }
+}
 
 // دستور /start
 bot.start((ctx) => {
-  ctx.session.waitingForPhoto = false; // ریست session
+  ctx.session.waitingForPhoto = false;
   ctx.reply("👋 خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", {
     reply_markup: {
       inline_keyboard: [
@@ -30,7 +47,7 @@ bot.command("buttons", (ctx) => {
   });
 });
 
-// وقتی کاربر دکمه آپلود عکس رو زد
+// هندل دکمه‌ها
 bot.on("callback_query", async (ctx) => {
   const data = ctx.callbackQuery?.data;
   if (!data) return ctx.answerCbQuery();
@@ -39,11 +56,10 @@ bot.on("callback_query", async (ctx) => {
     ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
   }
-
   ctx.answerCbQuery();
 });
 
-// وقتی عکس ارسال شد
+// هندل عکس
 bot.on("photo", async (ctx) => {
   if (!ctx.session.waitingForPhoto) {
     return ctx.reply("❌ لطفاً اول دکمه آپلود را بزنید!");
@@ -64,9 +80,7 @@ bot.on("photo", async (ctx) => {
       headers: { "Content-Type": "application/json" },
     }).catch(() => null);
 
-    if (!res) {
-      return ctx.reply("❌ سرور آپلود در دسترس نیست");
-    }
+    if (!res) return ctx.reply("❌ سرور آپلود در دسترس نیست");
 
     const data = await res.json();
     if (data.success) {
@@ -94,6 +108,7 @@ bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 // هندلینگ درخواست‌ها
 export async function POST(req) {
   try {
+    await setupMongoSession(); // lazy-init
     const body = await req.json();
     await bot.handleUpdate(body);
     return new Response("ok");
@@ -105,6 +120,7 @@ export async function POST(req) {
 
 export async function GET() {
   try {
+    await setupMongoSession(); // lazy-init
     await bot.telegram.setWebhook(
       `${process.env.NEXT_PUBLIC_URL}/api/telegram`
     );
