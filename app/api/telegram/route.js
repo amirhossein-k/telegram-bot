@@ -4,28 +4,35 @@ import MongoSession from "telegraf-session-mongo";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-let mongoInitialized = false;
 let client;
+let mongoInitialized = false;
 
 async function setupMongoSession() {
   if (mongoInitialized) return;
 
-  try {
-    client = new MongoClient(process.env.MONGODB_URI);
-    await client.connect();
+  client = new MongoClient(process.env.MONGODB_URI);
+  await client.connect();
 
-    const db = client.db();
-    bot.use(new MongoSession(db, { collectionName: "sessions" }).middleware());
+  const db = client.db();
 
-    mongoInitialized = true;
-    console.log("✅ MongoDB connected for sessions");
-  } catch (err) {
-    console.error("❌ Error connecting to MongoDB:", err);
-  }
+  const session = new MongoSession(db, {
+    collectionName: "sessions",
+    getSessionKey: (ctx) => {
+      // هندل کردن انواع آپدیت مختلف
+      if (ctx.chat) return `${ctx.chat.id}`;
+      if (ctx.from) return `${ctx.from.id}`;
+      return null;
+    },
+  });
+
+  bot.use(session.middleware());
+  mongoInitialized = true;
+  console.log("✅ MongoDB connected for sessions");
 }
 
-// دستور /start
+// /start
 bot.start((ctx) => {
+  ctx.session = ctx.session || {}; // fallback
   ctx.session.waitingForPhoto = false;
   ctx.reply("👋 خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", {
     reply_markup: {
@@ -36,79 +43,34 @@ bot.start((ctx) => {
   });
 });
 
-// دستور /buttons
-bot.command("buttons", (ctx) => {
-  ctx.reply("یک گزینه انتخاب کنید:", {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
-      ],
-    },
-  });
-});
-
-// هندل دکمه‌ها
+// callback_query
 bot.on("callback_query", async (ctx) => {
+  ctx.session = ctx.session || {}; // fallback
   const data = ctx.callbackQuery?.data;
-  if (!data) return ctx.answerCbQuery();
 
   if (data === "upload_photo") {
     ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
   }
+
   ctx.answerCbQuery();
 });
 
-// هندل عکس
+// photo
 bot.on("photo", async (ctx) => {
+  ctx.session = ctx.session || {}; // fallback
   if (!ctx.session.waitingForPhoto) {
-    return ctx.reply("❌ لطفاً اول دکمه آپلود را بزنید!");
+    return ctx.reply("❌ اول دکمه آپلود را بزنید!");
   }
 
-  const photo = ctx.message.photo.pop();
-  const fileId = photo.file_id;
-
-  try {
-    const file = await ctx.telegram.getFile(fileId);
-    const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
-
-    ctx.reply("⏳ در حال آپلود عکس...");
-
-    const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
-      method: "POST",
-      body: JSON.stringify({ url: fileUrl }),
-      headers: { "Content-Type": "application/json" },
-    }).catch(() => null);
-
-    if (!res) return ctx.reply("❌ سرور آپلود در دسترس نیست");
-
-    const data = await res.json();
-    if (data.success) {
-      ctx.session.waitingForPhoto = false;
-      await ctx.replyWithPhoto(data.url, {
-        caption: "✅ آپلود موفق شد!",
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "🗑 حذف عکس", callback_data: `delete_${data.key}` }],
-          ],
-        },
-      });
-    } else {
-      ctx.reply("❌ خطا در آپلود به سرور");
-    }
-  } catch (err) {
-    console.error("❌ Error uploading:", err);
-    ctx.reply("❌ خطا در آپلود عکس");
-  }
+  ctx.session.waitingForPhoto = false;
+  ctx.reply("✅ عکس دریافت شد (اینجا آپلود به S3 اضافه میشه)");
 });
 
-// دستور تست
-bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
-
-// هندلینگ درخواست‌ها
+// webhook POST
 export async function POST(req) {
   try {
-    await setupMongoSession(); // lazy-init
+    await setupMongoSession();
     const body = await req.json();
     await bot.handleUpdate(body);
     return new Response("ok");
@@ -118,9 +80,10 @@ export async function POST(req) {
   }
 }
 
+// webhook GET
 export async function GET() {
   try {
-    await setupMongoSession(); // lazy-init
+    await setupMongoSession();
     await bot.telegram.setWebhook(
       `${process.env.NEXT_PUBLIC_URL}/api/telegram`
     );
