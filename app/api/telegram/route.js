@@ -4,7 +4,7 @@ import LocalSession from "telegraf-session-local";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-const localSession = new LocalSession({ database: "sessions.json" });
+const localSession = new LocalSession({ storage: LocalSession.storageMemory }); // تغییر به memory
 bot.use(localSession.middleware());
 
 // دکمه‌ها
