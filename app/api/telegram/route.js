@@ -3,8 +3,12 @@ import { Telegraf } from "telegraf";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
+const localSession = new LocalSession({ database: "sessions.json" });
+bot.use(localSession.middleware());
+
 // دکمه‌ها
 bot.command("buttons", (ctx) => {
+  ctx.session.waitingForPhoto = true; // کاربر در حالت انتظار برای آپلود
   ctx.reply("یک گزینه انتخاب کنید:", {
     reply_markup: {
       inline_keyboard: [
@@ -14,9 +18,10 @@ bot.command("buttons", (ctx) => {
   });
 });
 
-// وقتی کاربر دکمه آپلود عکس رو زد
+// وقتی دکمه آپلود عکس زده شد
 bot.on("callback_query", (ctx) => {
   if (ctx.callbackQuery.data === "upload_photo") {
+    ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
   }
   ctx.answerCbQuery();
@@ -24,6 +29,11 @@ bot.on("callback_query", (ctx) => {
 
 // وقتی عکس ارسال شد
 bot.on("photo", async (ctx) => {
+  console.log("📸 Photo received:", ctx.message.photo);
+  if (!ctx.session.waitingForPhoto) {
+    return ctx.reply("لطفاً اول دکمه آپلود را بزنید!");
+  }
+
   const photo = ctx.message.photo.pop();
   const fileId = photo.file_id;
 
@@ -41,6 +51,7 @@ bot.on("photo", async (ctx) => {
 
     const data = await res.json();
     if (data.success) {
+      ctx.session.waitingForPhoto = false; // پایان حالت انتظار
       await ctx.replyWithPhoto(data.url, { caption: "✅ آپلود موفق شد!" });
     } else {
       ctx.reply("❌ خطا در آپلود به سرور");

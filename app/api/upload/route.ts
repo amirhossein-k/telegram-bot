@@ -19,9 +19,11 @@ export async function POST(req: Request) {
     if (!response.ok) throw new Error("دانلود عکس از تلگرام ناموفق بود");
 
 
-    // تبدیل File به Buffer
     const buffer = Buffer.from(await response.arrayBuffer());
-    const key = `uploads/telegram/${Date.now()}.jpg`;
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const extension = contentType.split('/')[1] || 'jpg';
+    const key = `uploads/telegram/${Date.now()}.${extension}`;
+
     // پارامترهای آپلود
     const params = {
       Bucket: process.env.LIARA_BUCKET_NAME ?? 'c589564',
