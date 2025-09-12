@@ -1,19 +1,41 @@
+// app/api/telegram/route.js
 import { Telegraf } from "telegraf";
+import MongoSession from "telegraf-session-mongodb";
+import { MongoClient } from "mongodb";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+// تنظیم MongoDB برای session
+const client = new MongoClient(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+async function setupMongoSession() {
+  try {
+    await client.connect();
+    const db = client.db();
+    const session = new MongoSession(db, { collectionName: "sessions" });
+    bot.use(session.middleware());
+    console.log("✅ MongoDB connected for sessions");
+  } catch (err) {
+    console.error("❌ Error connecting to MongoDB:", err);
+  }
+}
+
+setupMongoSession();
 
 // دستور /start
 bot.start((ctx) => {
   console.log("📩 Command /start received from:", ctx.from);
-  const markup = {
+  ctx.session.waitingForPhoto = false; // ریست session
+  ctx.reply("خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", {
     reply_markup: {
       inline_keyboard: [
         [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
       ],
     },
-  };
-  console.log("Markup:", JSON.stringify(markup, null, 2));
-  ctx.reply("خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", markup);
+  });
 });
 
 // دستور /buttons
@@ -30,10 +52,11 @@ bot.command("buttons", (ctx) => {
   ctx.reply("یک گزینه انتخاب کنید:", markup);
 });
 
-// وقتی کاربر دکمه آپلود عکس را زد
+// وقتی کاربر دکمه آپلود عکس رو زد
 bot.on("callback_query", async (ctx) => {
   console.log("Callback received:", ctx.callbackQuery.data);
   if (ctx.callbackQuery.data === "upload_photo") {
+    ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
   } else if (ctx.callbackQuery.data.startsWith("delete_")) {
     const key = ctx.callbackQuery.data.replace("delete_", "");
@@ -47,7 +70,6 @@ bot.on("callback_query", async (ctx) => {
       if (result.success) {
         ctx.reply("🗑 عکس با موفقیت حذف شد!");
       } else {
-        console.error("❌ Delete response error:", result);
         ctx.reply("❌ خطا در حذف عکس");
       }
     } catch (err) {
@@ -60,6 +82,10 @@ bot.on("callback_query", async (ctx) => {
 
 // وقتی عکس ارسال شد
 bot.on("photo", async (ctx) => {
+  if (!ctx.session.waitingForPhoto) {
+    return ctx.reply("لطفاً اول دکمه آپلود را بزنید!");
+  }
+
   const photo = ctx.message.photo.pop();
   const fileId = photo.file_id;
 
@@ -74,14 +100,7 @@ bot.on("photo", async (ctx) => {
       method: "POST",
       body: JSON.stringify({ url: fileUrl }),
       headers: { "Content-Type": "application/json" },
-    }).catch((err) => {
-      console.error("❌ Fetch error:", err.message, {
-        url: `${process.env.UPLOAD_ENDPOINT}/api/upload`,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-      });
-      return null;
-    });
+    }).catch(() => null);
 
     if (!res) {
       return ctx.reply("❌ سرور آپلود در دسترس نیست");
@@ -89,6 +108,7 @@ bot.on("photo", async (ctx) => {
 
     const data = await res.json();
     if (data.success) {
+      ctx.session.waitingForPhoto = false;
       await ctx.replyWithPhoto(data.url, {
         caption: "✅ آپلود موفق شد!",
         reply_markup: {
@@ -98,7 +118,6 @@ bot.on("photo", async (ctx) => {
         },
       });
     } else {
-      console.error("❌ Upload response error:", data);
       ctx.reply("❌ خطا در آپلود به سرور");
     }
   } catch (err) {
