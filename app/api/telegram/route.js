@@ -1,55 +1,64 @@
-// D:\prject\telegram\telegram-bot\app\api\
-// route.js
+// app/api/telegram/route.js
 import { Telegraf } from "telegraf";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-let games = {}; // ذخیره بازی‌ها به صورت in-memory
-
-// وقتی کاربر /start زد
-bot.start((ctx) => {
-  ctx.replyWithPhoto(
-    { url: "https://t.me/hamdelchannel/2" }, // لینک عکس (یا می‌تونی File ID تلگرام بزنی)
-    {
-      caption:
-        "👋 سلام! به ربات ما خوش اومدی.\n\nاینجا می‌تونی بازی بینگو رو شروع کنی 🎲",
-      parse_mode: "Markdown",
-    }
-  );
-});
-// هر متنی که کاربر بفرسته همونو برگردون
-bot.on("text", (ctx) => {
-  console.log("📩 User sent:", ctx.message.text);
-  ctx.reply(`Echo: ${ctx.message.text}`);
-});
+// دکمه‌ها
 bot.command("buttons", (ctx) => {
-  const keyboard = {
-    inline_keyboard: [
-      [{ text: "دکمه 1", callback_data: "button1" }],
-      [{ text: "دکمه 2", callback_data: "button2" }],
-    ],
-  };
-  ctx.reply("دکمه‌ها را بزنید:", { reply_markup: keyboard });
+  ctx.reply("یک گزینه انتخاب کنید:", {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
+      ],
+    },
+  });
 });
-// مدیریت callback
+
+// وقتی کاربر دکمه آپلود عکس رو زد
 bot.on("callback_query", (ctx) => {
-  if (ctx.callbackQuery.data === "button1") {
-    ctx.reply("دکمه 1 زده شد!");
+  if (ctx.callbackQuery.data === "upload_photo") {
+    ctx.reply("📸 لطفاً یک عکس ارسال کن");
   }
   ctx.answerCbQuery();
 });
-// دستور تستی
+
+// وقتی عکس ارسال شد
+bot.on("photo", async (ctx) => {
+  const photo = ctx.message.photo.pop();
+  const fileId = photo.file_id;
+
+  try {
+    const file = await ctx.telegram.getFile(fileId);
+    const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+
+    ctx.reply("⏳ در حال آپلود عکس...");
+
+    const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
+      method: "POST",
+      body: JSON.stringify({ url: fileUrl }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      await ctx.replyWithPhoto(data.url, { caption: "✅ آپلود موفق شد!" });
+    } else {
+      ctx.reply("❌ خطا در آپلود به سرور");
+    }
+  } catch (err) {
+    console.error("❌ Error uploading:", err);
+    ctx.reply("❌ خطا در آپلود عکس");
+  }
+});
+
+// دستور تست
 bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 
+// هندلینگ وبهوک
 export async function POST(req) {
   try {
     const body = await req.json();
-
-    console.log("📩 Update:", JSON.stringify(body, null, 2));
-
-    // اینجا پیام دریافتی رو هندل می‌کنیم
     await bot.handleUpdate(body);
-
     return new Response("ok");
   } catch (err) {
     console.error("❌ Error:", err);
@@ -57,7 +66,6 @@ export async function POST(req) {
   }
 }
 
-// برای تست دستی در مرورگر
 export async function GET() {
   return new Response("✅ Telegram Webhook is running");
 }
