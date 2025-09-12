@@ -1,5 +1,6 @@
 // app/api/telegram/route.js
 import { Telegraf } from "telegraf";
+import LocalSession from "telegraf-session-local";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -20,6 +21,7 @@ bot.command("buttons", (ctx) => {
 
 // وقتی دکمه آپلود عکس زده شد
 bot.on("callback_query", (ctx) => {
+  console.log("Callback received:", ctx.callbackQuery.data);
   if (ctx.callbackQuery.data === "upload_photo") {
     ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
@@ -36,10 +38,10 @@ bot.on("photo", async (ctx) => {
 
   const photo = ctx.message.photo.pop();
   const fileId = photo.file_id;
-
   try {
     const file = await ctx.telegram.getFile(fileId);
     const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+    console.log("File URL:", fileUrl);
 
     ctx.reply("⏳ در حال آپلود عکس...");
 
@@ -47,18 +49,49 @@ bot.on("photo", async (ctx) => {
       method: "POST",
       body: JSON.stringify({ url: fileUrl }),
       headers: { "Content-Type": "application/json" },
-    });
+    }).catch(() => null);
 
     const data = await res.json();
     if (data.success) {
-      ctx.session.waitingForPhoto = false; // پایان حالت انتظار
-      await ctx.replyWithPhoto(data.url, { caption: "✅ آپلود موفق شد!" });
+      ctx.session.waitingForPhoto = false;
+      await ctx.replyWithPhoto(data.url, {
+        caption: "✅ آپلود موفق شد!",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🗑 حذف عکس", callback_data: `delete_${data.key}` }],
+          ],
+        },
+      });
     } else {
       ctx.reply("❌ خطا در آپلود به سرور");
     }
   } catch (err) {
     console.error("❌ Error uploading:", err);
     ctx.reply("❌ خطا در آپلود عکس");
+  }
+});
+// مدیریت حذف
+bot.on("callback_query", async (ctx) => {
+  const data = ctx.callbackQuery.data;
+  if (data.startsWith("delete_")) {
+    const key = data.replace("delete_", "");
+    try {
+      const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
+        method: "DELETE",
+        body: JSON.stringify({ key }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = await res.json();
+      if (result.success) {
+        ctx.reply("🗑 عکس با موفقیت حذف شد!");
+      } else {
+        ctx.reply("❌ خطا در حذف عکس");
+      }
+    } catch (err) {
+      console.error("❌ Error deleting:", err);
+      ctx.reply("❌ خطا در حذف عکس");
+    }
+    ctx.answerCbQuery();
   }
 });
 
