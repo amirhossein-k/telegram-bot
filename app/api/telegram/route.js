@@ -1,39 +1,16 @@
 // app/api/telegram/route.js
 import { Telegraf } from "telegraf";
-import MongoSession from "telegraf-session-mongodb";
-import { MongoClient } from "mongodb";
+import LocalSession from "telegraf-session-local";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// اتصال MongoDB فقط یک بار (lazy-init)
-let mongoInitialized = false;
-let client;
-
-async function setupMongoSession() {
-  if (mongoInitialized) return;
-
-  try {
-    client = new MongoClient(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    await client.connect();
-    const db = client.db();
-    const session = new MongoSession(db, { collectionName: "sessions" });
-    bot.use(session.middleware());
-
-    mongoInitialized = true;
-    console.log("✅ MongoDB connected for sessions");
-  } catch (err) {
-    console.error("❌ Error connecting to MongoDB:", err);
-  }
-}
+// ذخیره session در فایل JSON روی سرور
+bot.use(new LocalSession({ database: "sessions.json" }).middleware());
 
 // دستور /start
 bot.start((ctx) => {
   ctx.session.waitingForPhoto = false; // ریست session
-  ctx.reply("خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", {
+  ctx.reply("👋 خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", {
     reply_markup: {
       inline_keyboard: [
         [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
@@ -53,14 +30,10 @@ bot.command("buttons", (ctx) => {
   });
 });
 
-// هندل کردن callback ها
+// وقتی کاربر دکمه آپلود عکس رو زد
 bot.on("callback_query", async (ctx) => {
   const data = ctx.callbackQuery?.data;
-
-  if (!data) {
-    console.log("❌ callback_query بدون data دریافت شد");
-    return ctx.answerCbQuery();
-  }
+  if (!data) return ctx.answerCbQuery();
 
   if (data === "upload_photo") {
     ctx.session.waitingForPhoto = true;
@@ -73,7 +46,7 @@ bot.on("callback_query", async (ctx) => {
 // وقتی عکس ارسال شد
 bot.on("photo", async (ctx) => {
   if (!ctx.session.waitingForPhoto) {
-    return ctx.reply("لطفاً اول دکمه آپلود را بزنید!");
+    return ctx.reply("❌ لطفاً اول دکمه آپلود را بزنید!");
   }
 
   const photo = ctx.message.photo.pop();
@@ -121,7 +94,6 @@ bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 // هندلینگ درخواست‌ها
 export async function POST(req) {
   try {
-    await setupMongoSession(); // ← init در زمان اولین request
     const body = await req.json();
     await bot.handleUpdate(body);
     return new Response("ok");
@@ -133,7 +105,6 @@ export async function POST(req) {
 
 export async function GET() {
   try {
-    await setupMongoSession(); // ← init اینجا هم
     await bot.telegram.setWebhook(
       `${process.env.NEXT_PUBLIC_URL}/api/telegram`
     );
