@@ -47,6 +47,7 @@ bot.on("callback_query", async (ctx) => {
       if (result.success) {
         ctx.reply("🗑 عکس با موفقیت حذف شد!");
       } else {
+        console.error("❌ Delete response error:", result);
         ctx.reply("❌ خطا در حذف عکس");
       }
     } catch (err) {
@@ -73,7 +74,14 @@ bot.on("photo", async (ctx) => {
       method: "POST",
       body: JSON.stringify({ url: fileUrl }),
       headers: { "Content-Type": "application/json" },
-    }).catch(() => null);
+    }).catch((err) => {
+      console.error("❌ Fetch error:", err.message, {
+        url: `${process.env.UPLOAD_ENDPOINT}/api/upload`,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+      });
+      return null;
+    });
 
     if (!res) {
       return ctx.reply("❌ سرور آپلود در دسترس نیست");
@@ -90,6 +98,7 @@ bot.on("photo", async (ctx) => {
         },
       });
     } else {
+      console.error("❌ Upload response error:", data);
       ctx.reply("❌ خطا در آپلود به سرور");
     }
   } catch (err) {
