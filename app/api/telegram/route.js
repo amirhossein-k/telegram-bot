@@ -1,80 +1,42 @@
-// app/api/telegram/route.js
 import { Telegraf } from "telegraf";
-import LocalSession from "telegraf-session-local";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-const localSession = new LocalSession({ storage: LocalSession.storageMemory }); // تغییر به memory
-bot.use(localSession.middleware());
-
-// دکمه‌ها
-bot.command("buttons", (ctx) => {
-  ctx.session.waitingForPhoto = true; // کاربر در حالت انتظار برای آپلود
-  ctx.reply("یک گزینه انتخاب کنید:", {
+// دستور /start
+bot.start((ctx) => {
+  console.log("📩 Command /start received from:", ctx.from);
+  const markup = {
     reply_markup: {
       inline_keyboard: [
         [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
       ],
     },
-  });
+  };
+  console.log("Markup:", JSON.stringify(markup, null, 2));
+  ctx.reply("خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", markup);
 });
 
-// وقتی دکمه آپلود عکس زده شد
-bot.on("callback_query", (ctx) => {
+// دستور /buttons
+bot.command("buttons", (ctx) => {
+  console.log("📩 Command /buttons received from:", ctx.from);
+  const markup = {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
+      ],
+    },
+  };
+  console.log("Markup:", JSON.stringify(markup, null, 2));
+  ctx.reply("یک گزینه انتخاب کنید:", markup);
+});
+
+// وقتی کاربر دکمه آپلود عکس را زد
+bot.on("callback_query", async (ctx) => {
   console.log("Callback received:", ctx.callbackQuery.data);
   if (ctx.callbackQuery.data === "upload_photo") {
-    ctx.session.waitingForPhoto = true;
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
-  }
-  ctx.answerCbQuery();
-});
-
-// وقتی عکس ارسال شد
-bot.on("photo", async (ctx) => {
-  console.log("📸 Photo received:", ctx.message.photo);
-  if (!ctx.session.waitingForPhoto) {
-    return ctx.reply("لطفاً اول دکمه آپلود را بزنید!");
-  }
-
-  const photo = ctx.message.photo.pop();
-  const fileId = photo.file_id;
-  try {
-    const file = await ctx.telegram.getFile(fileId);
-    const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
-    console.log("File URL:", fileUrl);
-
-    ctx.reply("⏳ در حال آپلود عکس...");
-
-    const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
-      method: "POST",
-      body: JSON.stringify({ url: fileUrl }),
-      headers: { "Content-Type": "application/json" },
-    }).catch(() => null);
-
-    const data = await res.json();
-    if (data.success) {
-      ctx.session.waitingForPhoto = false;
-      await ctx.replyWithPhoto(data.url, {
-        caption: "✅ آپلود موفق شد!",
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "🗑 حذف عکس", callback_data: `delete_${data.key}` }],
-          ],
-        },
-      });
-    } else {
-      ctx.reply("❌ خطا در آپلود به سرور");
-    }
-  } catch (err) {
-    console.error("❌ Error uploading:", err);
-    ctx.reply("❌ خطا در آپلود عکس");
-  }
-});
-// مدیریت حذف
-bot.on("callback_query", async (ctx) => {
-  const data = ctx.callbackQuery.data;
-  if (data.startsWith("delete_")) {
-    const key = data.replace("delete_", "");
+  } else if (ctx.callbackQuery.data.startsWith("delete_")) {
+    const key = ctx.callbackQuery.data.replace("delete_", "");
     try {
       const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
         method: "DELETE",
@@ -91,14 +53,54 @@ bot.on("callback_query", async (ctx) => {
       console.error("❌ Error deleting:", err);
       ctx.reply("❌ خطا در حذف عکس");
     }
-    ctx.answerCbQuery();
+  }
+  ctx.answerCbQuery();
+});
+
+// وقتی عکس ارسال شد
+bot.on("photo", async (ctx) => {
+  const photo = ctx.message.photo.pop();
+  const fileId = photo.file_id;
+
+  try {
+    const file = await ctx.telegram.getFile(fileId);
+    const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+    console.log("File URL:", fileUrl);
+
+    ctx.reply("⏳ در حال آپلود عکس...");
+
+    const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
+      method: "POST",
+      body: JSON.stringify({ url: fileUrl }),
+      headers: { "Content-Type": "application/json" },
+    }).catch(() => null);
+
+    if (!res) {
+      return ctx.reply("❌ سرور آپلود در دسترس نیست");
+    }
+
+    const data = await res.json();
+    if (data.success) {
+      await ctx.replyWithPhoto(data.url, {
+        caption: "✅ آپلود موفق شد!",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🗑 حذف عکس", callback_data: `delete_${data.key}` }],
+          ],
+        },
+      });
+    } else {
+      ctx.reply("❌ خطا در آپلود به سرور");
+    }
+  } catch (err) {
+    console.error("❌ Error uploading:", err);
+    ctx.reply("❌ خطا در آپلود عکس");
   }
 });
 
 // دستور تست
 bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 
-// هندلینگ وبهوک
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -111,5 +113,13 @@ export async function POST(req) {
 }
 
 export async function GET() {
-  return new Response("✅ Telegram Webhook is running");
+  try {
+    await bot.telegram.setWebhook(
+      `${process.env.NEXT_PUBLIC_URL}/api/telegram`
+    );
+    return new Response("✅ Webhook set successfully");
+  } catch (err) {
+    console.error("❌ Error setting webhook:", err);
+    return new Response("❌ Error setting webhook", { status: 500 });
+  }
 }
