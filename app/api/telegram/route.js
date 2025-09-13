@@ -1,5 +1,6 @@
-import Photo from "@/model/Photo";
+import Photo from "@/app/model/Photo";
 import { Telegraf } from "telegraf";
+import { connectDB } from "@/lib/mongodb";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
