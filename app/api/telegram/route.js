@@ -1,49 +1,14 @@
 import { Telegraf } from "telegraf";
-import mongoose from "mongoose";
-
-// اتصال به MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ Connected to MongoDB");
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-  });
-
-// تعریف Schema برای کاربران
-const userSchema = new mongoose.Schema({
-  userId: { type: Number, required: true, unique: true },
-  waitingForPhoto: { type: Boolean, default: false },
-  photos: [
-    {
-      url: { type: String, required: true },
-      key: { type: String, required: true },
-      uploadedAt: { type: Date, default: Date.now },
-    },
-  ],
-});
-
-const User = mongoose.model("User", userSchema);
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
+// ذخیره حالت کاربران به صورت موقت
+const userStates = new Map();
+
 // دستور /start
-bot.start(async (ctx) => {
-  console.log(ctx, "ctx");
+bot.start((ctx) => {
   console.log("📩 Command /start received from:", ctx.from);
-  const userId = ctx.from.id;
-
-  // بررسی یا ایجاد کاربر در دیتابیس
-  await User.findOneAndUpdate(
-    { userId },
-    { userId, waitingForPhoto: false },
-    { upsert: true, new: true }
-  );
-
+  userStates.set(ctx.from.id, { waitingForPhoto: false });
   const markup = {
     reply_markup: {
       inline_keyboard: [
@@ -56,7 +21,7 @@ bot.start(async (ctx) => {
 });
 
 // دستور /buttons
-bot.command("buttons", async (ctx) => {
+bot.command("buttons", (ctx) => {
   console.log("📩 Command /buttons received from:", ctx.from);
   const markup = {
     reply_markup: {
@@ -71,17 +36,10 @@ bot.command("buttons", async (ctx) => {
 
 // وقتی کاربر دکمه آپلود یا حذف را زد
 bot.on("callback_query", async (ctx) => {
-  console.log(ctx.callbackQuery, "ctx.callbackQuery");
   const callbackData = ctx.callbackQuery?.data;
   console.log("Callback received:", callbackData);
-  const userId = ctx.from.id;
-
   if (callbackData === "upload_photo") {
-    await User.findOneAndUpdate(
-      { userId },
-      { waitingForPhoto: true },
-      { upsert: true }
-    );
+    userStates.set(ctx.from.id, { waitingForPhoto: true });
     ctx.reply("📸 لطفاً یک عکس ارسال کن");
   } else if (
     typeof callbackData === "string" &&
@@ -96,8 +54,6 @@ bot.on("callback_query", async (ctx) => {
       });
       const result = await res.json();
       if (result.success) {
-        // حذف عکس از دیتابیس
-        await User.findOneAndUpdate({ userId }, { $pull: { photos: { key } } });
         ctx.reply("🗑 عکس با موفقیت حذف شد!");
       } else {
         console.error("❌ Delete response error:", result);
@@ -113,10 +69,8 @@ bot.on("callback_query", async (ctx) => {
 
 // وقتی عکس ارسال شد
 bot.on("photo", async (ctx) => {
-  const userId = ctx.from.id;
-  const user = await User.findOne({ userId });
-
-  if (!user || !user.waitingForPhoto) {
+  const userState = userStates.get(ctx.from.id) || { waitingForPhoto: false };
+  if (!userState.waitingForPhoto) {
     return ctx.reply("لطفاً اول دکمه آپلود را بزنید!");
   }
 
@@ -149,14 +103,7 @@ bot.on("photo", async (ctx) => {
 
     const data = await res.json();
     if (data.success) {
-      // ذخیره اطلاعات عکس در دیتابیس
-      await User.findOneAndUpdate(
-        { userId },
-        {
-          waitingForPhoto: false,
-          $push: { photos: { url: data.url, key: data.key } },
-        }
-      );
+      userStates.set(ctx.from.id, { waitingForPhoto: false });
       await ctx.replyWithPhoto(data.url, {
         caption: "✅ آپلود موفق شد!",
         reply_markup: {
@@ -181,7 +128,6 @@ bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 export async function POST(req) {
   try {
     const body = await req.json();
-    console.log("📩 Received webhook update:", JSON.stringify(body, null, 2));
     await bot.handleUpdate(body);
     return new Response("OK", { status: 200 });
   } catch (err) {
