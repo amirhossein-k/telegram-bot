@@ -91,7 +91,7 @@ bot.on("photo", async (ctx) => {
 
     ctx.reply("⏳ در حال آپلود عکس...");
 
-    const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/upload`, {
       method: "POST",
       body: JSON.stringify({ url: fileUrl }),
       headers: { "Content-Type": "application/json" },
@@ -113,7 +113,7 @@ bot.on("photo", async (ctx) => {
         caption: "✅ آپلود موفق شد!",
         reply_markup: {
           inline_keyboard: [
-            [{ text: "🗑 حذف عکس", callback_data: `delete_${data.key}` }],
+            [{ text: "🗑 حذف عکس", callback_data: `delete_${data.Key}` }],
           ],
         },
       });
