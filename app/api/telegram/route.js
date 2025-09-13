@@ -45,7 +45,7 @@ bot.on("callback_query", async (ctx) => {
     return ctx.reply("📸 لطفاً یک عکس ارسال کن");
   }
 
-  if (typeof callbackData === "string" && callbackData.startsWith("delete_")) {
+  if (callbackData.startsWith("delete_")) {
     const key = callbackData.replace("delete_", "");
     try {
       const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
