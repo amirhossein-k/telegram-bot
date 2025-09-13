@@ -1,3 +1,4 @@
+import Photo from "@/model/Photo";
 import { Telegraf } from "telegraf";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -63,6 +64,8 @@ bot.on("callback_query", async (ctx) => {
       }
 
       if (result.success) {
+        await connectDB();
+        await Photo.findOneAndDelete({ fileKey: key });
         ctx.reply("🗑 عکس با موفقیت حذف شد!");
       } else {
         ctx.reply("❌ خطا در حذف عکس");
@@ -109,6 +112,18 @@ bot.on("photo", async (ctx) => {
 
     if (data.success) {
       userStates.set(ctx.from.id, { waitingForPhoto: false });
+      // ذخیره در دیتابیس
+      await connectDB();
+      await Photo.create({
+        userId: ctx.from.id,
+        username: ctx.from.username,
+        firstName: ctx.from.first_name,
+        lastName: ctx.from.last_name,
+        fileUrl: data.url,
+        fileKey: data.Key, // کلید برگردونده شده از سرور
+        telegramFileId: fileId, // file_id تلگرام
+      });
+
       await ctx.replyWithPhoto(data.url, {
         caption: "✅ آپلود موفق شد!",
         reply_markup: {
