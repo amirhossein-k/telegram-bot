@@ -2,12 +2,11 @@ import { Telegraf } from "telegraf";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// ذخیره حالت کاربران به صورت موقت
+// ذخیره حالت کاربران
 const userStates = new Map();
 
 // دستور /start
 bot.start((ctx) => {
-  console.log("📩 Command /start received from:", ctx.from);
   userStates.set(ctx.from.id, { waitingForPhoto: false });
   const markup = {
     reply_markup: {
@@ -16,13 +15,11 @@ bot.start((ctx) => {
       ],
     },
   };
-  console.log("Markup:", JSON.stringify(markup, null, 2));
   ctx.reply("خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", markup);
 });
 
 // دستور /buttons
 bot.command("buttons", (ctx) => {
-  console.log("📩 Command /buttons received from:", ctx.from);
   const markup = {
     reply_markup: {
       inline_keyboard: [
@@ -30,21 +27,23 @@ bot.command("buttons", (ctx) => {
       ],
     },
   };
-  console.log("Markup:", JSON.stringify(markup, null, 2));
   ctx.reply("یک گزینه انتخاب کنید:", markup);
 });
 
-// وقتی کاربر دکمه آپلود یا حذف را زد
+// دکمه‌ها
 bot.on("callback_query", async (ctx) => {
   const callbackData = ctx.callbackQuery?.data;
   console.log("Callback received:", callbackData);
+
+  // خیلی سریع جواب بدیم که ارور "query is too old" نیاد
+  await ctx.answerCbQuery();
+
   if (callbackData === "upload_photo") {
     userStates.set(ctx.from.id, { waitingForPhoto: true });
-    ctx.reply("📸 لطفاً یک عکس ارسال کن");
-  } else if (
-    typeof callbackData === "string" &&
-    callbackData.startsWith("delete_")
-  ) {
+    return ctx.reply("📸 لطفاً یک عکس ارسال کن");
+  }
+
+  if (typeof callbackData === "string" && callbackData.startsWith("delete_")) {
     const key = callbackData.replace("delete_", "");
     try {
       const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
@@ -52,11 +51,20 @@ bot.on("callback_query", async (ctx) => {
         body: JSON.stringify({ key }),
         headers: { "Content-Type": "application/json" },
       });
-      const result = await res.json();
+
+      const text = await res.text();
+      console.log("Delete server response:", text);
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        return ctx.reply("❌ پاسخ سرور حذف معتبر نیست");
+      }
+
       if (result.success) {
         ctx.reply("🗑 عکس با موفقیت حذف شد!");
       } else {
-        console.error("❌ Delete response error:", result);
         ctx.reply("❌ خطا در حذف عکس");
       }
     } catch (err) {
@@ -64,7 +72,6 @@ bot.on("callback_query", async (ctx) => {
       ctx.reply("❌ خطا در حذف عکس");
     }
   }
-  ctx.answerCbQuery();
 });
 
 // وقتی عکس ارسال شد
@@ -88,20 +95,18 @@ bot.on("photo", async (ctx) => {
       method: "POST",
       body: JSON.stringify({ url: fileUrl }),
       headers: { "Content-Type": "application/json" },
-    }).catch((err) => {
-      console.error("❌ Fetch error:", err.message, {
-        url: `${process.env.UPLOAD_ENDPOINT}/api/upload`,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-      });
-      return null;
     });
 
-    if (!res) {
-      return ctx.reply("❌ سرور آپلود در دسترس نیست");
+    const text = await res.text();
+    console.log("Upload server response:", text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return ctx.reply("❌ پاسخ سرور معتبر نیست (JSON برنگشت)");
     }
 
-    const data = await res.json();
     if (data.success) {
       userStates.set(ctx.from.id, { waitingForPhoto: false });
       await ctx.replyWithPhoto(data.url, {
@@ -113,7 +118,6 @@ bot.on("photo", async (ctx) => {
         },
       });
     } else {
-      console.error("❌ Upload response error:", data);
       ctx.reply("❌ خطا در آپلود به سرور");
     }
   } catch (err) {
@@ -125,6 +129,7 @@ bot.on("photo", async (ctx) => {
 // دستور تست
 bot.command("ping", (ctx) => ctx.reply("pong 🏓"));
 
+// POST handler
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -136,6 +141,7 @@ export async function POST(req) {
   }
 }
 
+// GET handler برای ست کردن webhook
 export async function GET() {
   try {
     await bot.telegram.setWebhook(
