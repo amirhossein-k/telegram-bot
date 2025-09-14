@@ -3,7 +3,7 @@ export function buttonsHandler() {
     const markup = {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "📤 آپلود عکس", callback_data: "upload_photo" }],
+          [{ text: "📤 آپلود عکس", callback_data: "Name_set" }],
         ],
       },
     };
