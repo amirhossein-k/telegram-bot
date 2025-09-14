@@ -1,5 +1,5 @@
 import { connectDB } from "@/app/lib/mongodb";
-import Photo from "@/app/models/Photo";
+import Photo from "@/app/model/Photo";
 
 export function photoHandler(userStates) {
   return async (ctx) => {
