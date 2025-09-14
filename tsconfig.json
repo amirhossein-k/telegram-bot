@@ -28,7 +28,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/telegram/handlers/buttons.js",
-    "app/telegram/handlers/start.js",
+    "app/telegram/handlers/start.ts",
     "app/telegram/handlers/ping.js",
     "app/telegram/handlers/photo.js",
     "app/telegram/handlers/callback.js"
