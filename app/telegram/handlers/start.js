@@ -8,6 +8,9 @@ export function startHandler(userStates) {
         ],
       },
     };
-    ctx.reply("خوش آمدید! برای آپلود عکس، دکمه زیر را بزنید:", markup);
+    ctx.replyWithPhoto("https://t.me/hamdelchannel/5", {
+      caption: "👋 خوش آمدید!\nبرای آپلود عکس، روی دکمه زیر کلیک کنید:",
+      reply_markup: markup,
+    });
   };
 }
