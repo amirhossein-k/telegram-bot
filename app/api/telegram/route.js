@@ -45,10 +45,10 @@ bot.on("callback_query", async (ctx) => {
     return ctx.reply("📸 لطفاً یک عکس ارسال کن");
   }
 
-  if (callbackData.startsWith("delete_")) {
-    const key = callbackData.replace("delete_", "");
+  if (typeof callbackData === "string" && callbackData.startsWith("delete_")) {
+    const key = callbackData.replace("delete_", ""); // باید بشه "uploads/telegram/xxx.jpg"
     try {
-      const res = await fetch(`${process.env.UPLOAD_ENDPOINT}/api/upload`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/upload`, {
         method: "DELETE",
         body: JSON.stringify({ key }),
         headers: { "Content-Type": "application/json" },
