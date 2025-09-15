@@ -89,7 +89,6 @@ export function profileHandler() {
 
                     await ctx.answerCbQuery("پروفایل شما کامل شد!");
 
-                    // پیام با کیبورد کلاسیک ثابت
                     return ctx.telegram.sendMessage(
                         ctx.chat.id,
                         `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${user.province}\n🏙 شهر: ${user.city}`,
