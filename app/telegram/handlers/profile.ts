@@ -95,12 +95,12 @@ export function profileHandler() {
                         `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${user.province}\n🏙 شهر: ${user.city}`,
                         {
                             reply_markup: {
-                                keyboard: [
-                                    ["پروفایل من", "🖼 ویرایش عکس‌ها"],
-                                    ["✏️ ویرایش پروفایل", "❓ راهنما"],
+                                inline_keyboard: [
+                                    [{ text: "👤 پروفایل من", callback_data: "show_profile" }],
+                                    [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+                                    [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
                                 ],
-                                resize_keyboard: true,
-                                one_time_keyboard: false,
+
                             },
                         }
                     );

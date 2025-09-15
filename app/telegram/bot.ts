@@ -23,12 +23,12 @@ bot.on("callback_query", async (ctx) => {
 // آپلود عکس واقعی
 bot.on("photo", photoUploadHandler());
 
-bot.hears("پروفایل من", async (ctx) => {
+bot.action("show_profile", async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
-    // ارسال آلبوم عکس‌ها
+    // نمایش آلبوم عکس‌ها
     if (user.photos && user.photos.length > 0) {
         const media = user.photos.map((url: string) => ({ type: "photo", media: url }));
         await ctx.replyWithMediaGroup(media);
@@ -45,8 +45,6 @@ bot.hears("پروفایل من", async (ctx) => {
 🏙 شهر: ${user.city || "-"}
 `;
 
-
-
     return ctx.reply(profileText, {
         reply_markup: {
             inline_keyboard: [
@@ -56,6 +54,7 @@ bot.hears("پروفایل من", async (ctx) => {
         },
     });
 });
+
 
 bot.hears("🖼 ویرایش عکس‌ها", async (ctx) => {
     // منوی ویرایش عکس
