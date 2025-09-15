@@ -122,7 +122,7 @@ export function callbackHandler() {
             inline_keyboard: [
               [{ text: "📜 شرایط استفاده", callback_data: "terms" }],
               // [{ text: "📸 آپلود عکس", callback_data: "upload_photos" }],
-              [{ text: "👤 پروفایل", callback_data: "show_profile" }],
+              [{ text: "پروفایل", callback_data: "show_profile" }],
             ],
           },
         }

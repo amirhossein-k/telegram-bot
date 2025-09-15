@@ -23,7 +23,7 @@ bot.on("callback_query", async (ctx) => {
 // آپلود عکس واقعی
 bot.on("photo", photoUploadHandler());
 
-bot.hears("👤 پروفایل من", async (ctx) => {
+bot.hears("پروفایل من", async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
