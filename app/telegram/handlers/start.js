@@ -34,6 +34,20 @@ export function startHandler() {
     await connectDB();
 
     let user = await User.findOne({ telegramId: ctx.from.id });
+    // اگر کاربر وجود داره و پروفایل کامل کرده
+    if (user && user.step >= 6) {
+      return ctx.reply(`👋 خوش برگشتی ${user.name}!\n\nپروفایلت اینجاست:`, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "👤 مشاهده پروفایل", callback_data: "show_profile" }],
+            [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+            [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+          ],
+        },
+      });
+    }
+    // اگر کاربر جدید بود یا پروفایل ناقص داشت → مرحله ۱
+
     if (!user) {
       user = await User.create({
         telegramId: ctx.from.id,

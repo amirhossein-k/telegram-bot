@@ -3,9 +3,11 @@ import { Telegraf } from "telegraf";
 import { profileHandler } from "./handlers/profile";
 import { callbackHandler } from "./handlers/callback";
 import { photoUploadHandler, setPhotoSlotHandler } from "./handlers/photoHandler";
+import { startHandler } from "./handlers/start";
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
+bot.start(startHandler()); // اینجا هندلر استارت جدید
 
 // پیام متنی (اسم، سن و ...)
 bot.on("text", profileHandler());
