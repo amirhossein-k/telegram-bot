@@ -1,3 +1,4 @@
+// app\telegram\handlers\profile.ts
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
 import { getProvinceKeyboard } from '@/app/lib/provinces'
@@ -14,8 +15,13 @@ export function profileHandler() {
                 telegramId: ctx.from.id,
                 step: 1, // شروع پروفایل
             });
+        } else {
+            // اگر step نامعتبر بود، آن را ریست کن (اجتناب از ریست کردن پروفایل کامل شده)
+            if (!user.step || user.step < 1) {
+                user.step = 1;
+                await user.save();
+            }
         }
-
         switch (user.step) {
             case 1:
                 if (ctx.message?.text) {

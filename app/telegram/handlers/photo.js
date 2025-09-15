@@ -1,3 +1,4 @@
+// app\telegram\handlers\photo.js
 import { connectDB } from "@/app/lib/mongodb";
 import Photo from "@/app/model/Photo";
 

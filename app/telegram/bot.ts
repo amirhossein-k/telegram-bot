@@ -1,3 +1,4 @@
+// app\telegram\bot.ts
 import { Telegraf } from "telegraf";
 import { profileHandler } from "./handlers/profile";
 import { callbackHandler } from "./handlers/callback";
