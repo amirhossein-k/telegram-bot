@@ -21,6 +21,22 @@ bot.on("callback_query", async (ctx) => {
 // آپلود عکس واقعی
 bot.on("photo", photoUploadHandler());
 
+bot.hears("👤 پروفایل من", async (ctx) => {
+    // نمایش پروفایل کاربر
+});
+
+bot.hears("🖼 ویرایش عکس‌ها", async (ctx) => {
+    // منوی ویرایش عکس
+});
+
+bot.hears("✏️ ویرایش پروفایل", async (ctx) => {
+    // منوی ویرایش پروفایل
+});
+
+bot.hears("❓ راهنما", async (ctx) => {
+    ctx.reply("📖 اینجا متن راهنما میاد...");
+});
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
