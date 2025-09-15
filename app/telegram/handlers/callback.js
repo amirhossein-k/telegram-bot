@@ -11,6 +11,55 @@ export function callbackHandler() {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
 
+    if (data === "show_profile") {
+      if (!user) return ctx.reply("پروفایل پیدا نشد");
+
+      const profileText = `
+👤 پروفایل شما:
+
+📝 نام: ${user.name || "-"}
+🚻 جنسیت: ${user.gender || "-"}
+🎂 سن: ${user.age || "-"}
+📍 استان: ${user.province || "-"}
+🏙 شهر: ${user.city || "-"}
+`;
+
+      return ctx.reply(profileText, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+            [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+          ],
+        },
+      });
+    }
+    if (data === "edit_photos") {
+      return ctx.reply("کدوم عکس رو میخوای تغییر بدی؟", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "📸 عکس ۱", callback_data: "photo_slot_1" }],
+            [{ text: "📸 عکس ۲", callback_data: "photo_slot_2" }],
+            [{ text: "📸 عکس ۳", callback_data: "photo_slot_3" }],
+            [{ text: "⬅️ بازگشت", callback_data: "show_profile" }],
+          ],
+        },
+      });
+    }
+
+    if (data === "edit_profile") {
+      return ctx.reply("کدوم بخش رو میخوای ویرایش کنی؟", {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "ℹ️ بیشتر درباره من", callback_data: "edit_about" }],
+            [{ text: "👤 شخصی", callback_data: "edit_personal" }],
+            [{ text: "❤️ علایق", callback_data: "edit_interests" }],
+            [{ text: "🔍 به دنبال", callback_data: "edit_searching" }],
+            [{ text: "⬅️ بازگشت", callback_data: "show_profile" }],
+          ],
+        },
+      });
+    }
+
     // قوانین
     if (data === "terms") {
       await ctx.answerCbQuery();
@@ -71,7 +120,8 @@ export function callbackHandler() {
           reply_markup: {
             inline_keyboard: [
               [{ text: "📜 شرایط استفاده", callback_data: "terms" }],
-              [{ text: "📸 آپلود عکس", callback_data: "upload_photos" }],
+              // [{ text: "📸 آپلود عکس", callback_data: "upload_photos" }],
+              [{ text: "👤 پروفایل", callback_data: "show_profile" }],
             ],
           },
         }

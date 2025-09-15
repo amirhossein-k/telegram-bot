@@ -17,7 +17,8 @@ const UserSchema = new Schema({
         slot1: { type: String, default: null },
         slot2: { type: String, default: null },
         slot3: { type: String, default: null },
-    }, bio: String,
+    },
+    bio: String,
     interests: String,
     lookingFor: String,
 });
