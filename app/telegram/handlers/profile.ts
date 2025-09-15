@@ -84,7 +84,8 @@ export function profileHandler() {
                     user.step = 6; // پروفایل تکمیل شد
                     await user.save();
 
-                    await ctx.answerCbQuery();
+                    await ctx.answerCbQuery("پروفایل شما کامل شد!");
+
                     return ctx.reply(
                         `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${user.province}\n🏙 شهر: ${user.city}\n\n⚠️ استفاده از ربات به منزله پذیرش قوانین است.\n از منوی زیر استفاده کن`,
                         {
