@@ -10,8 +10,9 @@ export function setPhotoSlotHandler() {
         const data = ctx.callbackQuery?.data;
         if (!data) return;
 
+        await connectDB();
+
         if (data.startsWith("photo_slot_")) {
-            await connectDB();
 
             const slot = data.replace("photo_slot_", "slot");
 
@@ -27,8 +28,30 @@ export function setPhotoSlotHandler() {
             await user.save();
 
             await ctx.answerCbQuery();
-            return ctx.reply("📸 حالا عکس مورد نظرت رو ارسال کن.");
+            // return ctx.reply("📸 حالا عکس مورد نظرت رو ارسال کن.");
+            return ctx.reply("📸 حالا عکس مورد نظر را ارسال کنید.", {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "⬅️ بازگشت", callback_data: "edit_photos" }],
+                    ],
+                },
+            });
+
         }
+        // دکمه بازگشت به منوی ویرایش عکس
+        if (data === "back_to_photo_menu") {
+            return ctx.reply("📸 کدام عکس را می‌خواهی تغییر بدهی؟", {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "📸 عکس ۱", callback_data: "photo_slot_1" }],
+                        [{ text: "📸 عکس ۲", callback_data: "photo_slot_2" }],
+                        [{ text: "📸 عکس ۳", callback_data: "photo_slot_3" }],
+                        [{ text: "⬅️ بازگشت", callback_data: "show_profile" }],
+                    ],
+                },
+            });
+        }
+
     };
 }
 // هندل آپلود خود عکس (پیامی که شامل photo است)
@@ -84,6 +107,11 @@ export function photoUploadHandler() {
 
             await ctx.replyWithPhoto(uploadData.url, {
                 caption: `✅ عکس با موفقیت در ${slot} ذخیره شد.`,
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "⬅️ بازگشت به منوی عکس‌ها", callback_data: "edit_photos" }],
+                    ],
+                },
             });
         } catch (err) {
             console.error("❌ Error in photoUploadHandler:", err);
