@@ -37,16 +37,14 @@ export function startHandler() {
     if (!user) {
       user = await User.create({
         telegramId: ctx.from.id,
-        username: ctx.from.username,
-        firstName: ctx.from.first_name,
-        lastName: ctx.from.last_name,
+        // username: ctx.from.username,
+        // firstName: ctx.from.first_name,
+        // lastName: ctx.from.last_name,
         step: 1,
       });
     } else {
-      if (!user.step || user.step < 1) {
-        user.step = 1;
-        await user.save();
-      }
+      user.step = 1;
+      await user.save();
     }
 
     // پیام خوش‌آمد + درخواست اسم (در caption)
