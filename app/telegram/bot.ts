@@ -4,6 +4,8 @@ import { profileHandler } from "./handlers/profile";
 import { callbackHandler } from "./handlers/callback";
 import { photoUploadHandler, setPhotoSlotHandler } from "./handlers/photoHandler";
 import { startHandler } from "./handlers/start";
+import { connectDB } from "../lib/mongodb";
+import User from "../model/User";
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -22,7 +24,37 @@ bot.on("callback_query", async (ctx) => {
 bot.on("photo", photoUploadHandler());
 
 bot.hears("👤 پروفایل من", async (ctx) => {
-    // نمایش پروفایل کاربر
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    // ارسال آلبوم عکس‌ها
+    if (user.photos && user.photos.length > 0) {
+        const media = user.photos.map((url: string) => ({ type: "photo", media: url }));
+        await ctx.replyWithMediaGroup(media);
+    }
+
+    // متن پروفایل
+    const profileText = `
+👤 پروفایل شما:
+
+📝 نام: ${user.name || "-"}
+🚻 جنسیت: ${user.gender || "-"}
+🎂 سن: ${user.age || "-"}
+📍 استان: ${user.province || "-"}
+🏙 شهر: ${user.city || "-"}
+`;
+
+
+
+    return ctx.reply(profileText, {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+                [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+            ],
+        },
+    });
 });
 
 bot.hears("🖼 ویرایش عکس‌ها", async (ctx) => {

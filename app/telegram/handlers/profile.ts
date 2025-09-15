@@ -10,6 +10,7 @@ export function profileHandler() {
         await connectDB()
 
         let user = await User.findOne({ telegramId: ctx.from.id });
+
         if (!user) {
             user = await User.create({
                 telegramId: ctx.from.id,
@@ -22,6 +23,8 @@ export function profileHandler() {
                 await user.save();
             }
         }
+        // اگر پروفایل کامل است، ثبت نام را اجرا نکن
+        if (user.step >= 6) return;
         switch (user.step) {
             case 1:
                 if (ctx.message?.text) {
@@ -86,19 +89,18 @@ export function profileHandler() {
 
                     await ctx.answerCbQuery("پروفایل شما کامل شد!");
 
-                    return ctx.reply(
-                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${user.province}\n🏙 شهر: ${user.city}\n\n⚠️ استفاده از ربات به منزله پذیرش قوانین است.\n از منوی زیر استفاده کن`,
+                    // پیام با کیبورد کلاسیک ثابت
+                    return ctx.telegram.sendMessage(
+                        ctx.chat.id,
+                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${user.province}\n🏙 شهر: ${user.city}`,
                         {
                             reply_markup: {
                                 keyboard: [
                                     ["👤 پروفایل من", "🖼 ویرایش عکس‌ها"],
                                     ["✏️ ویرایش پروفایل", "❓ راهنما"],
-                                    // [{ text: "📜 شرایط استفاده", callback_data: "terms" }],
-                                    // [{ text: "📸 آپلود عکس", callback_data: "upload_photos" }],
-
                                 ],
-                                resize_keyboard: true, // سایز رو متناسب می‌کنه
-                                one_time_keyboard: false, // همیشه بمونه
+                                resize_keyboard: true,
+                                one_time_keyboard: false,
                             },
                         }
                     );
