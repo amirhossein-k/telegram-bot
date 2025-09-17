@@ -20,8 +20,17 @@ export async function POST(req: Request) {
 
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
-    const extension = contentType.split('/')[1] || 'jpg';
+    // هدر Content-Type رو بخون
+
+    let contentType = response.headers.get('content-type') || 'image/jpeg';
+    // فقط بخش image/* رو نگه دار
+    if (!contentType.startsWith("image/")) {
+      contentType = "image/jpeg"; // fallback
+    }
+    // پسوند معتبر بساز
+    let extension = contentType.split("/")[1] || "jpg";
+    if (extension === "jpeg") extension = "jpg"; // normalize
+
     const key = `uploads/telegram/${Date.now()}.${extension}`;
 
     // پارامترهای آپلود
@@ -44,7 +53,7 @@ export async function POST(req: Request) {
 
 
     // تولید لینک عمومی
-    const publicUrl = `${process.env.LIARA_ENDPOINT!}/${process.env.LIARA_BUCKET_NAME!}/${params.Key}`
+    const publicUrl = `${process.env.LIARA_ENDPOINT!}/${process.env.LIARA_BUCKET_NAME!}/${key}`
 
     return NextResponse.json({
       success: true,
