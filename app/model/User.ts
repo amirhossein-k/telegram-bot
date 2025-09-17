@@ -22,8 +22,10 @@ const userSchema = new Schema(
             slot2: { type: String, default: null },
             slot3: { type: String, default: null },
         },
-        likes: [{ type: Number }], // آرایه‌ای از telegramId افرادی که کاربر لایک کرده
-        matches: [{ type: Number }], // آرایه‌ای از telegramId افرادی که Match شده‌اند
+        likes: { type: [Number], default: [] }, // کاربرانی که این کاربر لایک کرده
+        likedBy: { type: [Number], default: [] }, // کاربرانی که این کاربر را لایک کردند
+        matches: { type: [Number], default: [] }, // کاربرانی که Match شده اند
+
         bio: String,
         interests: String,
         lookingFor: String,

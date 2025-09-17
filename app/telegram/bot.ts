@@ -11,23 +11,19 @@ import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/se
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
+// ---- استارت و ثبت پروفایل ----
 bot.start(startHandler()); // اینجا هندلر استارت جدید
-
 // پیام متنی (اسم، سن و ...)
 bot.on("text", profileHandler());
 
-// کلیک روی دکمه‌ها (جنسیت، استان، شهر، شرایط، آپلود عکس)
-// bot.on("callback_query", async (ctx) => {
-//     await callbackHandler()(ctx);
-//     await setPhotoSlotHandler()(ctx);
-// });
-// ✅ به جاش مستقیم action ها رو تعریف کن:
+
+// ---- Callback ها برای مراحل ثبت پروفایل ----
 bot.action(/gender_|province_|city_/, callbackHandler());
 bot.action(["edit_photos", "edit_profile", "terms", "upload_photos"], callbackHandler());
 bot.action(["photo_slot_1", "photo_slot_2", "photo_slot_3", "back_to_photo_menu"], setPhotoSlotHandler());
-// آپلود عکس واقعی
+// ---- آپلود عکس ----
 bot.on("photo", photoUploadHandler());
-
+// ---- نمایش پروفایل شخصی ----
 bot.action("show_profile", async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
@@ -66,18 +62,20 @@ bot.action("show_profile", async (ctx) => {
             inline_keyboard: [
                 [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
                 [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
-                [{ text: "🔍 جستجو", callback_data: "search_profiles" }] // دکمه جستجو اضافه شد
+                [{ text: "🔍 جستجو", callback_data: "search_profiles" }], // دکمه جستجو اضافه شد
+                [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
+
             ],
         },
     });
 });
-// دکمه جستجو
+// ---- جستجو ----
 bot.action("search_profiles", async (ctx) => {
     await searchHandler(ctx);
 });
 
 // دکمه بعدی پروفایل در جستجو
-// دکمه بعدی پروفایل
+// ---- پروفایل بعدی در جستجو ----
 bot.action("next_profile", async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
@@ -92,7 +90,7 @@ bot.action("next_profile", async (ctx) => {
     await searchHandler(ctx);
 });;
 
-// دکمه لایک در جستجو
+// ---- لایک کاربر ----
 bot.action(/like_\d+/, async (ctx) => {
     await connectDB();
 
@@ -104,15 +102,33 @@ bot.action(/like_\d+/, async (ctx) => {
     // حالا می‌توانیم از data استفاده کنیم
     const likedId = Number(data.replace("like_", ""));
     if (isNaN(likedId)) return ctx.reply("❌ خطا: کاربر نامعتبر");
+
     const user = await User.findOne({ telegramId: ctx.from.id });
     const likedUser = await User.findOne({ telegramId: likedId });
     if (!user || !likedUser) return ctx.reply("❌ کاربر پیدا نشد.");
 
+    // ثبت لایک
     if (!user.likes.includes(likedId)) {
         user.likes.push(likedId);
         await user.save();
     }
 
+    // ثبت در likedBy کاربر مقابل و اطلاع
+    if (!likedUser.likedBy.includes(user.telegramId)) {
+        likedUser.likedBy.push(user.telegramId);
+        await likedUser.save();
+
+        // اطلاع به کاربر B
+        await ctx.telegram.sendMessage(likedUser.telegramId,
+            `❤️ کاربر ${user.name} شما را لایک کرد!`,
+            {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "مشاهده پروفایل", callback_data: `show_profile_${user.telegramId}` }]
+                    ]
+                }
+            });
+    }
     // بررسی Match
     if (likedUser.likes.includes(user.telegramId) && !user.matches.includes(likedId)) {
         user.matches.push(likedId);
@@ -128,6 +144,56 @@ bot.action(/like_\d+/, async (ctx) => {
         await ctx.reply("✅ لایک ثبت شد!");
     }
 });
+// ---- مشاهده کسانی که شما را لایک کردند ----
+bot.action("liked_by_me", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    if (!user.likedBy.length) return ctx.reply("❌ کسی شما را لایک نکرده");
+
+    // ساخت دکمه‌ها برای هر کاربر
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const keyboard = user.likedBy.map((id: any) => [{
+        text: `👤 ${id}`, // بعدا می‌توانیم اسم واقعی کاربر را جایگزین کنیم
+        callback_data: `show_profile_${id}`
+    }]);
+
+    await ctx.reply("💌 کسانی که شما را لایک کردند:", {
+        reply_markup: { inline_keyboard: keyboard }
+    });
+});
+// ---- مشاهده پروفایل کاربر از دکمه ----
+bot.action(/show_profile_\d+/, async (ctx) => {
+    await connectDB();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const targetId = Number((ctx.callbackQuery as any)?.data.replace("show_profile_", ""));
+    const targetUser = await User.findOne({ telegramId: targetId });
+    if (!targetUser) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    const profileText = `
+👤 نام: ${targetUser.name}
+🚻 جنسیت: ${targetUser.gender}
+🎂 سن: ${targetUser.age}
+📍 استان: ${targetUser.province}
+🏙 شهر: ${targetUser.city}
+📝 بیو: ${targetUser.bio || "-"}
+  `;
+
+    // نمایش عکس اگر موجود است
+    const urls = Object.values(targetUser.photos).filter(Boolean) as string[];
+    if (urls.length > 0) {
+        const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
+            type: "photo",
+            media: url,
+            caption: idx === 0 ? profileText : undefined,
+        }));
+        await ctx.replyWithMediaGroup(media);
+    } else {
+        await ctx.reply(profileText);
+    }
+});
+
 
 export async function POST(req: Request) {
     try {
