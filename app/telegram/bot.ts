@@ -115,12 +115,19 @@ bot.action(/search_province_.+/, async (ctx) => {
         .replace(/_/g, " ");
 
     console.log("Searching for province:", provinceName);
+    const testAge = 23; // تست روی سن 23
+
+    // const results = await User.find({
+    //     province: { $regex: `^${provinceName}$`, $options: "i" },
+    //     telegramId: { $ne: user.telegramId },
+    //     step: { $gte: 6 }
+    // }).sort({ age: 1 });
 
     const results = await User.find({
-        province: { $regex: `^${provinceName}$`, $options: "i" },
-        telegramId: { $ne: user.telegramId },
-        step: { $gte: 6 }
-    }).sort({ age: 1 });
+        age: testAge,
+        telegramId: { $ne: user.telegramId }, // خود کاربر را حذف کنیم
+        step: { $gte: 6 } // فقط کاربرانی که به مرحله 6 یا بالاتر رسیدند
+    });
     if (!results.length) {
         return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceName}" یافت نشد.`);
     }
