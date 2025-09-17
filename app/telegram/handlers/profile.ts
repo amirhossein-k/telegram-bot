@@ -1,7 +1,7 @@
 // app\telegram\handlers\profile.ts
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
-import { getProfileProvinceKeyboard } from '@/app/lib/provinces'
+import { getProvinceKeyboard } from '@/app/lib/provinces'
 import { getCityKeyboard } from "@/app/lib/cities";
 
 export function profileHandler() {
@@ -61,13 +61,13 @@ export function profileHandler() {
                     user.step = 4
                     await user.save()
 
-                    return ctx.reply("📌 مرحله ۴ از ۵: استانت رو انتخاب کن:", getProfileProvinceKeyboard())
+                    return ctx.reply("📌 مرحله ۴ از ۵: استانت رو انتخاب کن:", getProvinceKeyboard());
                 } else {
                     return ctx.reply("❌ لطفاً یک عدد معتبر بفرست.");
                 }
             case 4: //استان
-                if (ctx.callbackQuery?.data?.startsWith("province_")) {
-                    const province = ctx.callbackQuery.data.replace("province_", "");
+                if (ctx.callbackQuery?.data?.startsWith("profile_province_")) {
+                    const province = ctx.callbackQuery.data.replace("profile_province_", "").replace(/_/g, " ");
                     user.province = province;
                     user.step = 5;
                     await user.save();

@@ -79,33 +79,19 @@ const provinces = [
   { name: "همدان" },
   { name: "یزد" },
 ];
-
-// کیبورد برای ثبت پروفایل
-const getProfileProvinceKeyboard = () => {
+const getProvinceKeyboard = (forSearch = false) => {
   return {
     reply_markup: {
       inline_keyboard: provinces.map((province) => [
         {
           text: province.name,
-          callback_data: `province_${province.name.replace(/ /g, "_")}`,
+          callback_data: forSearch
+            ? `search_province_${province.name.replace(/ /g, "_")}`
+            : province.callback,
         },
       ]),
     },
   };
 };
 
-// کیبورد برای جستجو بر اساس استان
-const getSearchProvinceKeyboard = () => {
-  return {
-    reply_markup: {
-      inline_keyboard: provinces.map((province) => [
-        {
-          text: province.name,
-          callback_data: `search_province_${province.name.replace(/ /g, "_")}`,
-        },
-      ]),
-    },
-  };
-};
-
-export { provinces, getProfileProvinceKeyboard, getSearchProvinceKeyboard };
+export { provinces, getProvinceKeyboard };

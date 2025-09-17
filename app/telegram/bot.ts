@@ -11,7 +11,7 @@ import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/se
 
 import Message from "@/app/model/Message";
 import Chat from "../model/Chat";
-import { getSearchProvinceKeyboard } from "../lib/provinces";
+import { getProvinceKeyboard } from "../lib/provinces";
 const activeChats = new Map<number, number>();
 
 
@@ -95,7 +95,7 @@ bot.action("search_by_province", async (ctx) => {
 
     await ctx.reply(
         "📍 لطفاً استان مورد نظر خود را انتخاب کنید:",
-        getSearchProvinceKeyboard()
+        getProvinceKeyboard()
     );
 });
 bot.action(/search_province_.+/, async (ctx) => {
