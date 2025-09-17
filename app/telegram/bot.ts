@@ -6,8 +6,8 @@ import { photoUploadHandler, setPhotoSlotHandler } from "./handlers/photoHandler
 import { startHandler } from "./handlers/start";
 import { connectDB } from "../lib/mongodb";
 import User from "../model/User";
-import { InputMedia, InputMediaPhoto } from "typegram";
-import { searchHandler } from "./handlers/searchHandler";
+import { InputMedia, InputMediaPhoto, CallbackQuery } from "typegram";
+import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/searchHandler";
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -76,17 +76,58 @@ bot.action("search_profiles", async (ctx) => {
     await searchHandler(ctx);
 });
 
-// bot.hears("🖼 ویرایش عکس‌ها", async (ctx) => {
-//     // منوی ویرایش عکس
-// });
+// دکمه بعدی پروفایل در جستجو
+// دکمه بعدی پروفایل
+bot.action("next_profile", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
-// bot.hears("✏️ ویرایش پروفایل", async (ctx) => {
-//     // منوی ویرایش پروفایل
-// });
+    const results = userSearchResults.get(user.telegramId) || [];
+    if (!results.length) return ctx.reply("❌ هیچ پروفایلی برای نمایش نیست.");
 
-// bot.hears("❓ راهنما", async (ctx) => {
-//     ctx.reply("📖 اینجا متن راهنما میاد...");
-// });
+    let index = userSearchIndex.get(user.telegramId) || 0;
+    index = (index + 1) % results.length;
+    userSearchIndex.set(user.telegramId, index);
+    await searchHandler(ctx);
+});;
+
+// دکمه لایک در جستجو
+bot.action(/like_\d+/, async (ctx) => {
+    await connectDB();
+
+    // داخل handler دکمه
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (ctx.callbackQuery as any)?.data;
+    if (!data) return ctx.reply("❌ خطا: داده نامعتبر");
+
+    // حالا می‌توانیم از data استفاده کنیم
+    const likedId = Number(data.replace("like_", ""));
+    if (isNaN(likedId)) return ctx.reply("❌ خطا: کاربر نامعتبر");
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    const likedUser = await User.findOne({ telegramId: likedId });
+    if (!user || !likedUser) return ctx.reply("❌ کاربر پیدا نشد.");
+
+    if (!user.likes.includes(likedId)) {
+        user.likes.push(likedId);
+        await user.save();
+    }
+
+    // بررسی Match
+    if (likedUser.likes.includes(user.telegramId) && !user.matches.includes(likedId)) {
+        user.matches.push(likedId);
+        likedUser.matches.push(user.telegramId);
+        await user.save();
+        await likedUser.save();
+
+        await ctx.telegram.sendMessage(user.telegramId,
+            `🎉 شما با ${likedUser.name} Match شدید!`);
+        await ctx.telegram.sendMessage(likedUser.telegramId,
+            `🎉 شما با ${user.name} Match شدید!`);
+    } else {
+        await ctx.reply("✅ لایک ثبت شد!");
+    }
+});
 
 export async function POST(req: Request) {
     try {

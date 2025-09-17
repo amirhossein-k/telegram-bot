@@ -1,10 +1,11 @@
 // app/telegram/handlers/searchHandler.ts
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
+import { InputMediaPhoto } from "typegram";
 
-const userSearchIndex = new Map<number, number>(); // نگهداری شاخص پروفایل در جستجو برای هر کاربر
+export const userSearchIndex = new Map<number, number>(); // نگهداری شاخص پروفایل در جستجو برای هر کاربر
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const userSearchResults = new Map<number, any[]>(); // نگهداری نتایج جستجو برای هر کاربر
+export const userSearchResults = new Map<number, any[]>(); // نگهداری نتایج جستجو برای هر کاربر
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function searchHandler(ctx: any) {
@@ -35,13 +36,20 @@ export async function searchHandler(ctx: any) {
     const targetUser = results[index];
 
     // جمع‌آوری عکس‌ها
-    const photos = Object.values(targetUser.photos).filter(Boolean);
-    if (photos.length > 0) {
-        const media = photos.map((url, i) => ({
+    const urls = Object.values(targetUser.photos).filter(Boolean) as string[];
+    if (urls.length > 0) {
+        // const media = photos.map((url, i) => ({
+        //     type: "photo",
+        //     media: url,
+        //     caption: i === 0 ? `👤 ${targetUser.name}, ${targetUser.age} سال` : undefined,
+        // }));
+        // await ctx.replyWithMediaGroup(media);
+        const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
             type: "photo",
             media: url,
-            caption: i === 0 ? `👤 ${targetUser.name}, ${targetUser.age} سال` : undefined,
+            caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
         }));
+
         await ctx.replyWithMediaGroup(media);
     }
     // else {
