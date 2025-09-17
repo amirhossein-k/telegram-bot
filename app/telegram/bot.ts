@@ -240,7 +240,7 @@ bot.action(/accept_request_\d+/, async (ctx) => {
         }
     };
 
-    await ctx.reply(`🎉 شما درخواست ${otherUser.name} را قبول کردید! حالا می‌توانید چت کنید.`);
+    await ctx.reply(`🎉 شما درخواست ${otherUser.name} را قبول کردید! حالا می‌توانید چت کنید.`, keyboard);
     await ctx.telegram.sendMessage(fromId, `🎉 کاربر ${user.name} درخواست شما را قبول کرد! حالا می‌توانید چت کنید.`, keyboard);
 });
 
@@ -309,6 +309,23 @@ bot.action("end_chat", async (ctx) => {
     await showProfile(chatWith);
 
 });
+
+// هر 2 دقیقه پیام یادآوری برای چت‌های فعال
+setInterval(async () => {
+    for (const [userId, partnerId] of activeChats.entries()) {
+        // چون map دوطرفه است، فقط برای یک طرف ارسال کنیم
+        if (userId > partnerId) continue;
+
+        const keyboard = {
+            reply_markup: {
+                inline_keyboard: [[{ text: "❌ قطع ارتباط", callback_data: "end_chat" }]]
+            }
+        };
+
+        await bot.telegram.sendMessage(userId, "⏳ آیا می‌خواهید چت را قطع کنید؟", keyboard);
+        await bot.telegram.sendMessage(partnerId, "⏳ آیا می‌خواهید چت را قطع کنید؟", keyboard);
+    }
+}, 2 * 60 * 1000); // هر 2 دقیقه
 
 
 bot.action(/reject_request_\d+/, async (ctx) => {
@@ -381,24 +398,29 @@ bot.on("photo", async (ctx) => {
     if (!user) return;
 
     const chatWith = activeChats.get(user.telegramId);
-    if (!chatWith) return ctx.reply("❌ شما در حال حاضر در چت فعال نیستید.");
+    if (chatWith) {
+        // 📌 کاربر در حال چت است → عکس را بفرست به طرف مقابل
+        const photo = ctx.message.photo[ctx.message.photo.length - 1];
+        const fileId = photo.file_id;
 
-    // گرفتن بهترین کیفیت تصویر
-    const photo = ctx.message.photo[ctx.message.photo.length - 1];
-    const fileId = photo.file_id;
+        // ذخیره در دیتابیس Chat/Message
+        await Message.create({
+            from: user.telegramId,
+            to: chatWith,
+            photo: fileId,
+            type: "photo",
+        });
 
-    // ذخیره در دیتابیس
-    await Message.create({
-        from: user.telegramId,
-        to: chatWith,
-        photo: fileId,
-        type: "photo"
-    });
+        // ارسال به طرف مقابل
+        await ctx.telegram.sendPhoto(chatWith, fileId, {
+            caption: `📷 تصویر جدید از ${user.name}`,
+        });
 
-    // ارسال به طرف مقابل
-    await ctx.telegram.sendPhoto(chatWith, fileId, {
-        caption: `📷 تصویر جدید از ${user.name}`
-    });
+    } else {
+        // 📌 کاربر در حالت چت نیست → یعنی آپلود پروفایل
+        return photoUploadHandler()(ctx);
+    }
+
 });
 
 // پیام صوتی (ویس)
