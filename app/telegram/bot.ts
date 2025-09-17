@@ -16,11 +16,14 @@ bot.start(startHandler()); // اینجا هندلر استارت جدید
 bot.on("text", profileHandler());
 
 // کلیک روی دکمه‌ها (جنسیت، استان، شهر، شرایط، آپلود عکس)
-bot.on("callback_query", async (ctx) => {
-    await callbackHandler()(ctx);
-    await setPhotoSlotHandler()(ctx);
-});
-
+// bot.on("callback_query", async (ctx) => {
+//     await callbackHandler()(ctx);
+//     await setPhotoSlotHandler()(ctx);
+// });
+// ✅ به جاش مستقیم action ها رو تعریف کن:
+bot.action(/gender_|province_|city_/, callbackHandler());
+bot.action(["edit_photos", "edit_profile", "terms", "upload_photos"], callbackHandler());
+bot.action(["photo_slot_1", "photo_slot_2", "photo_slot_3", "back_to_photo_menu"], setPhotoSlotHandler());
 // آپلود عکس واقعی
 bot.on("photo", photoUploadHandler());
 
@@ -31,21 +34,21 @@ bot.action("show_profile", async (ctx) => {
 
     // نمایش آلبوم عکس‌ها
     // اگر کاربر عکس دارد
-    if (user.photos) {
-        // const urls = Object.values(user.photos).filter((url) => !!url) as string[];
-        const urls = Object.values(user.photos).filter(Boolean) as string[];
+    const urls = Object.values(user.photos).filter(Boolean) as string[];
 
-        if (urls.length > 0) {
-            const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
-                type: "photo",
-                media: url,
-                caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
-            }));
+    // const urls = Object.values(user.photos).filter((url) => !!url) as string[];
 
-            await ctx.replyWithMediaGroup(media);
-        }
+    if (urls.length > 0) {
+        const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
+            type: "photo",
+            media: url,
+            caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
+        }));
 
+        await ctx.replyWithMediaGroup(media);
     }
+
+
     // متن پروفایل
     const profileText = `
 👤 پروفایل شما:
