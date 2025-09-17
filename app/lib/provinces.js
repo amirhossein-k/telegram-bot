@@ -82,14 +82,17 @@ const provinces = [
 const getProvinceKeyboard = (forSearch = false) => {
   return {
     reply_markup: {
-      inline_keyboard: provinces.map((province) => [
-        {
-          text: province.name,
-          callback_data: forSearch
-            ? `search_province_${province.name.replace(/ /g, "_")}`
-            : province.callback,
-        },
-      ]),
+      inline_keyboard: provinces.map((province) => {
+        const province_callback_data = province.name.replace(/ /g, "_");
+        return [
+          {
+            text: province.name,
+            callback_data: forSearch
+              ? `search_province_${province_callback_data}`
+              : `profile_province_${province_callback_data}`, // Corrected prefix for profile creation
+          },
+        ];
+      }),
     },
   };
 };

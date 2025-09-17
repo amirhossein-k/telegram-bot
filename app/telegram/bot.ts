@@ -95,7 +95,7 @@ bot.action("search_by_province", async (ctx) => {
 
     await ctx.reply(
         "📍 لطفاً استان مورد نظر خود را انتخاب کنید:",
-        getProvinceKeyboard()
+        getProvinceKeyboard(true)
     );
 });
 bot.action(/search_province_.+/, async (ctx) => {
