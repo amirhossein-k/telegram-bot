@@ -7,6 +7,7 @@ import { startHandler } from "./handlers/start";
 import { connectDB } from "../lib/mongodb";
 import User from "../model/User";
 import { InputMedia, InputMediaPhoto } from "typegram";
+import { searchHandler } from "./handlers/searchHandler";
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -70,7 +71,10 @@ bot.action("show_profile", async (ctx) => {
         },
     });
 });
-
+// دکمه جستجو
+bot.action("search_profiles", async (ctx) => {
+    await searchHandler(ctx);
+});
 
 // bot.hears("🖼 ویرایش عکس‌ها", async (ctx) => {
 //     // منوی ویرایش عکس
