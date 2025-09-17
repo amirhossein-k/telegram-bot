@@ -72,11 +72,15 @@ export function photoUploadHandler() {
 
             const photo = ctx.message?.photo;
             if (!photo || !photo.length) return ctx.reply("❌ لطفاً یک عکس ارسال کنید.");
-
+            console.log(photo, 'photo')
             const largest = photo[photo.length - 1];
+            console.log(largest, 'largest')
             const fileId = largest.file_id;
+            console.log('fileId', fileId)
             const file = await ctx.telegram.getFile(fileId);
+            console.log(file, 'file')
             const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+            console.log("fileUrl from Telegram:", fileUrl);
 
             // --- ارسال به API آپلود خودت (تا در S3 ذخیره بشه) ---
             const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/upload`, {
@@ -89,6 +93,8 @@ export function photoUploadHandler() {
             let uploadData;
             try {
                 uploadData = JSON.parse(uploadText);
+                console.log("uploadData from /api/upload:", uploadData);
+
             } catch {
                 console.error("Upload response not JSON:", uploadText);
                 return ctx.reply("❌ خطا در آپلود (پاسخ سرور نامعتبر است).");
