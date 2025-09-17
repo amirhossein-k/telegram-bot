@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       Bucket: process.env.LIARA_BUCKET_NAME ?? 'c589564',
       Key: key,
       Body: buffer,
-      ContentType: "image/jpeg",
+      ContentType: contentType,
     };
 
     // آپلود به پارس‌پک
