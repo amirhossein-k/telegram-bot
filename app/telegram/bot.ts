@@ -99,6 +99,9 @@ bot.action("search_by_province", async (ctx) => {
     );
 });
 bot.action(/search_province_.+/, async (ctx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    console.log("CallbackData:", (ctx.callbackQuery as any).data);
+
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
@@ -111,12 +114,14 @@ bot.action(/search_province_.+/, async (ctx) => {
         .replace("search_province_", "")
         .replace(/_/g, " ");
 
+    console.log("Province selected:", provinceName); // لاگ برای بررسی
 
+    // جستجوی کاربران بر اساس استان
     const results = await User.find({
         province: provinceName,
-        telegramId: { $ne: user.telegramId } // خودش رو نشون نده
-    });
-
+        telegramId: { $ne: user.telegramId },
+        step: { $gte: 6 } // فقط پروفایل کامل
+    }).sort({ age: 1 });
     if (!results.length) {
         return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceName}" یافت نشد.`);
     }
@@ -124,6 +129,7 @@ bot.action(/search_province_.+/, async (ctx) => {
     // ذخیره نتایج برای نمایش مرحله‌ای
     userSearchResults.set(user.telegramId, results);
     userSearchIndex.set(user.telegramId, 0);
+    await ctx.answerCbQuery(); // تایید callback بدون پیام
 
     await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceName}" پیدا شد.`);
     await searchHandler(ctx); // نمایش اولین پروفایل
