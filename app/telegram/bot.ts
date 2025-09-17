@@ -26,7 +26,7 @@ bot.action(/gender_|province_|city_/, callbackHandler());
 bot.action(["edit_photos", "edit_profile", "terms", "upload_photos"], callbackHandler());
 bot.action(["photo_slot_1", "photo_slot_2", "photo_slot_3", "back_to_photo_menu"], setPhotoSlotHandler());
 // ---- آپلود عکس ----
-bot.on("photo", photoUploadHandler());
+// bot.on("photo", photoUploadHandler());
 // ---- نمایش پروفایل شخصی ----
 bot.action("show_profile", async (ctx) => {
     await connectDB();
