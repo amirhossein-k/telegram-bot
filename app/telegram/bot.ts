@@ -499,7 +499,7 @@ bot.on("photo", async (ctx) => {
         await Message.create({
             from: user.telegramId,
             to: chatWith,
-            photo: fileId,
+            fileId: fileId,  // <- استفاده از fileId
             type: "photo",
         });
 
@@ -530,7 +530,7 @@ bot.on("voice", async (ctx) => {
     await Message.create({
         from: user.telegramId,
         to: chatWith,
-        voice: voice,
+        fileId: voice,  // <- استفاده از fileId
         type: "voice"
     });
 

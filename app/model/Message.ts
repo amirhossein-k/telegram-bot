@@ -5,7 +5,9 @@ const messageSchema = new Schema(
     {
         from: { type: Number, required: true }, // telegramId فرستنده
         to: { type: Number, required: true },   // telegramId گیرنده
-        text: { type: String, required: true },
+        type: { type: String, enum: ["text", "photo", "voice"], default: "text" },
+        text: { type: String },                 // متن پیام (برای type = text)
+        fileId: { type: String },               // file_id تلگرام برای عکس یا ویس
         timestamp: { type: Date, default: Date.now },
     },
     { timestamps: true }
