@@ -9,12 +9,14 @@ import User from "../model/User";
 import { InputMedia, InputMediaPhoto, CallbackQuery } from "typegram";
 import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/searchHandler";
 
+const activeChats = new Map<number, number>();
+
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
 // ---- استارت و ثبت پروفایل ----
 bot.start(startHandler()); // اینجا هندلر استارت جدید
 // پیام متنی (اسم، سن و ...)
-bot.on("text", profileHandler());
+// bot.on("text", profileHandler());
 
 
 // ---- Callback ها برای مراحل ثبت پروفایل ----
@@ -198,6 +200,7 @@ bot.action(/show_profile_\d+/, async (ctx) => {
     }
 });
 
+
 bot.action(/accept_request_\d+/, async (ctx) => {
     await connectDB();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -211,10 +214,14 @@ bot.action(/accept_request_\d+/, async (ctx) => {
     if (!otherUser.matches.includes(user.telegramId)) otherUser.matches.push(user.telegramId);
 
     // حذف از pending
-    user.pendingRequests = user.pendingRequests.filter((id: number) => id !== fromId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    user.pendingRequests = user.pendingRequests.filter((id: any) => id !== fromId);
 
     await user.save();
     await otherUser.save();
+    // ثبت چت فعال
+    activeChats.set(user.telegramId, fromId);
+    activeChats.set(fromId, user.telegramId);
 
     await ctx.reply(`🎉 شما درخواست ${otherUser.name} را قبول کردید! حالا می‌توانید چت کنید.`);
     await ctx.telegram.sendMessage(fromId, `🎉 کاربر ${user.name} درخواست شما را قبول کرد! حالا می‌توانید چت کنید.`);
@@ -242,21 +249,27 @@ bot.on("text", async (ctx) => {
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return;
 
-    // چک کنید آیا user در حال چت با کسی هست (مثلاً lastChatWith در حافظه یا DB)
-    const chatWith = user.lastChatWith;
-    if (!chatWith) return profileHandler()(ctx); // اگر چت نداریم، هندلر پروفایل
+    // آیا کاربر در حال چت هست؟
+    const chatWith = activeChats.get(user.telegramId);
 
-    const message = ctx.message.text;
+    if (chatWith) {
+        const message = ctx.message.text;
 
-    // ذخیره در دیتابیس
-    await Message.create({
-        from: user.telegramId,
-        to: chatWith,
-        text: message,
-    });
+        // ذخیره در دیتابیس
+        await Message.create({
+            from: user.telegramId,
+            to: chatWith,
+            text: message,
+        });
 
-    // ارسال به گیرنده
-    await ctx.telegram.sendMessage(chatWith, `💬 ${user.name}: ${message}`);
+        // ارسال پیام به طرف مقابل
+        await ctx.telegram.sendMessage(chatWith, `💬 ${user.name}: ${message}`);
+    } else {
+        // پیام متنی (اسم، سن و ...)
+
+        // اگه تو حالت چت نبود → بده به هندلر پروفایل
+        return profileHandler()(ctx);
+    }
 });
 
 
