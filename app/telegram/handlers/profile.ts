@@ -1,7 +1,7 @@
 // app\telegram\handlers\profile.ts
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
-import { getProvinceKeyboard } from '@/app/lib/provinces'
+import { getProfileProvinceKeyboard } from '@/app/lib/provinces'
 import { getCityKeyboard } from "@/app/lib/cities";
 
 export function profileHandler() {
@@ -61,7 +61,7 @@ export function profileHandler() {
                     user.step = 4
                     await user.save()
 
-                    return ctx.reply("📌 مرحله ۴ از ۵: استانت رو انتخاب کن:", getProvinceKeyboard())
+                    return ctx.reply("📌 مرحله ۴ از ۵: استانت رو انتخاب کن:", getProfileProvinceKeyboard())
                 } else {
                     return ctx.reply("❌ لطفاً یک عدد معتبر بفرست.");
                 }

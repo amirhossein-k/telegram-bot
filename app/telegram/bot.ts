@@ -11,7 +11,7 @@ import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/se
 
 import Message from "@/app/model/Message";
 import Chat from "../model/Chat";
-import { getProvinceKeyboard } from "../lib/provinces";
+import { getSearchProvinceKeyboard } from "../lib/provinces";
 const activeChats = new Map<number, number>();
 
 
@@ -91,8 +91,12 @@ bot.action("search_profiles", async (ctx) => {
 // - پیام قیمت بیاد.  
 // - دکمه پرداخت (می‌تونی درگاه پرداخت ایرانی وصل کنی).  
 bot.action("search_by_province", async (ctx) => {
-    await ctx.reply("📍 لطفاً استان مورد نظر خود را انتخاب کنید:", getProvinceKeyboard());
 
+
+    await ctx.reply(
+        "📍 لطفاً استان مورد نظر خود را انتخاب کنید:",
+        getSearchProvinceKeyboard()
+    );
 });
 bot.action(/search_province_.+/, async (ctx) => {
     await connectDB();
@@ -101,7 +105,12 @@ bot.action(/search_province_.+/, async (ctx) => {
 
     // گرفتن نام استان از callback_data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const provinceName = (ctx.callbackQuery as any).data.replace("search_province_", "").replace(/_/g, " ");
+    // گرفتن نام استان از callback_data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const provinceName = (ctx.callbackQuery as any).data
+        .replace("search_province_", "")
+        .replace(/_/g, " ");
+
 
     const results = await User.find({
         province: provinceName,
