@@ -12,30 +12,6 @@ export function callbackHandler() {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
 
-    if (data === "show_profile") {
-      return; // دیگه اینجا هندل نکن
-
-      //       if (!user) return ctx.reply("پروفایل پیدا نشد");
-
-      //       const profileText = `
-      // 👤 پروفایل شما:
-
-      // 📝 نام: ${user.name || "-"}
-      // 🚻 جنسیت: ${user.gender || "-"}
-      // 🎂 سن: ${user.age || "-"}
-      // 📍 استان: ${user.province || "-"}
-      // 🏙 شهر: ${user.city || "-"}
-      // `;
-
-      //       return ctx.reply(profileText, {
-      //         reply_markup: {
-      //           inline_keyboard: [
-      //             [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
-      //             [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
-      //           ],
-      //         },
-      //       });
-    }
     if (data === "edit_photos") {
       return ctx.reply("کدوم عکس رو میخوای تغییر بدی؟", {
         reply_markup: {
