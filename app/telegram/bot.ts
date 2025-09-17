@@ -30,16 +30,20 @@ bot.action("show_profile", async (ctx) => {
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
     // نمایش آلبوم عکس‌ها
-    if (user.photos && Object.values(user.photos).some((url) => url)) {
-        const urls = Object.values(user.photos).filter((url): url is string => typeof url === "string");
+    if (user.photos) {
+        const urls = Object.values(user.photos).filter((url) => !!url) as string[];
 
-        const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
-            type: "photo",
-            media: url, // اینجا حالا TS می‌دونه string هست
-            caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
-        }));
+        if (urls.length > 0) {
 
-        await ctx.replyWithMediaGroup(media);
+
+            const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
+                type: "photo",
+                media: url, // اینجا حالا TS می‌دونه string هست
+                caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
+            }));
+
+            await ctx.replyWithMediaGroup(media);
+        }
     }
     // متن پروفایل
     const profileText = `
