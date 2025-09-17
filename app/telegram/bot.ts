@@ -59,24 +59,46 @@ bot.action("show_profile", async (ctx) => {
 🎂 سن: ${user.age || "-"}
 📍 استان: ${user.province || "-"}
 🏙 شهر: ${user.city || "-"}
+❤️ لایک‌های باقی‌مانده: ${user.isPremium ? "نامحدود" : user.likesRemaining}
+
 `;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const buttons: any[] = [
+        [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+        [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+        [{ text: "🔍 جستجو", callback_data: "search_profiles" }],
+        [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
+    ];
 
-    return ctx.reply(profileText, {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
-                [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
-                [{ text: "🔍 جستجو", callback_data: "search_profiles" }], // دکمه جستجو اضافه شد
-                [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
+    if (!user.isPremium) {
+        buttons.push([{ text: "⭐️ عضویت ویژه", callback_data: "buy_premium" }]);
+    }
 
-            ],
-        },
-    });
+
+
+    return ctx.reply(profileText, { reply_markup: { inline_keyboard: buttons } });
+
 });
 // ---- جستجو ----
 bot.action("search_profiles", async (ctx) => {
     await searchHandler(ctx);
 });
+// 4. **هندل خرید عضویت ویژه (buy_premium)**  
+// وقتی کاربر دکمه "⭐️ عضویت ویژه" رو بزنه:  
+// - پیام قیمت بیاد.  
+// - دکمه پرداخت (می‌تونی درگاه پرداخت ایرانی وصل کنی).  
+
+
+bot.action("buy_premium", async (ctx) => {
+    await ctx.reply("⭐️ عضویت ویژه\n\n✅ قیمت: 10,000 تومان\nبا خرید عضویت ویژه می‌توانید لایک نامحدود داشته باشید.", {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: "💳 پرداخت", url: "https://your-payment-gateway.com/pay?amount=10000" }]
+            ]
+        }
+    });
+});
+
 
 // دکمه بعدی پروفایل در جستجو
 // ---- پروفایل بعدی در جستجو ----
@@ -111,6 +133,22 @@ bot.action(/like_\d+/, async (ctx) => {
     const likedUser = await User.findOne({ telegramId: likedId });
     if (!user || !likedUser) return ctx.reply("❌ کاربر پیدا نشد.");
 
+
+    if (!user.isPremium) {
+        if (user.likesRemaining <= 0) {
+            return ctx.reply("❌ سهمیه لایک شما تمام شد.\n\nبرای لایک نامحدود باید عضویت ویژه تهیه کنید.", {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: "⭐️ عضویت ویژه", callback_data: "buy_premium" }]
+                    ]
+                }
+            });
+        }
+        user.likesRemaining -= 1;
+        await user.save();
+
+        await ctx.reply(`❤️ لایک شما ثبت شد! \nتعداد لایک باقی‌مانده: ${user.likesRemaining}`);
+    }
     // ثبت لایک
     if (!user.likes.includes(likedId)) {
         user.likes.push(likedId);
@@ -180,7 +218,9 @@ bot.action(/show_profile_\d+/, async (ctx) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const targetId = Number((ctx.callbackQuery as any)?.data.replace("show_profile_", ""));
     const targetUser = await User.findOne({ telegramId: targetId });
-    if (!targetUser) return ctx.reply("❌ پروفایل پیدا نشد");
+    const currentUser = await User.findOne({ telegramId: ctx.from.id });
+
+    if (!targetUser || !currentUser) return ctx.reply("❌ پروفایل پیدا نشد");
 
     const profileText = `
 👤 نام: ${targetUser.name}
@@ -203,7 +243,56 @@ bot.action(/show_profile_\d+/, async (ctx) => {
     } else {
         await ctx.reply(profileText);
     }
+
+    // ساخت دکمه‌ها
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const keyboard: any[] = [];
+    // اگه این کاربر جزو کسانی بود که منو لایک کردن → دکمه شروع چت
+    if (currentUser.likedBy.includes(targetId)) {
+        keyboard.push([{ text: "💬 قبول درخواست چت", callback_data: `start_chat_${targetId}` }]);
+    }
+
+    await ctx.reply("👇 گزینه‌ها:", {
+        reply_markup: { inline_keyboard: keyboard }
+    });
+
 });
+// ---- در لایک ها شروع چت از طریق "قبول درخواست چت" ----
+bot.action(/start_chat_\d+/, async (ctx) => {
+    await connectDB();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const targetId = Number((ctx.callbackQuery as any)?.data.replace("start_chat_", ""));
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    const otherUser = await User.findOne({ telegramId: targetId });
+    if (!user || !otherUser) return ctx.reply("❌ کاربر پیدا نشد.");
+
+    // بررسی اینکه کسی در حال چت نباشه
+    if (activeChats.get(user.telegramId) || activeChats.get(otherUser.telegramId)) {
+        return ctx.reply("❌ یکی از شما در حال چت فعال است. لطفاً بعداً امتحان کنید.");
+    }
+
+    // ایجاد رکورد چت جدید
+    const newChat = await Chat.create({
+        users: [user.telegramId, otherUser.telegramId],
+        startedAt: new Date(),
+        messages: [],
+    });
+
+    // ثبت چت فعال
+    activeChats.set(user.telegramId, otherUser.telegramId);
+    activeChats.set(otherUser.telegramId, user.telegramId);
+
+    const keyboard = {
+        reply_markup: {
+            inline_keyboard: [[{ text: "❌ قطع ارتباط", callback_data: "end_chat" }]]
+        }
+    };
+
+    await ctx.reply(`✅ شما با ${otherUser.name} وارد چت شدید.`, keyboard);
+    await ctx.telegram.sendMessage(otherUser.telegramId, `✅ کاربر ${user.name} درخواست چت را قبول کرد.`, keyboard);
+});
+
+
 
 // هنگام قبول درخواست (شروع چت)
 bot.action(/accept_request_\d+/, async (ctx) => {

@@ -26,6 +26,9 @@ const userSchema = new Schema(
         likedBy: { type: [Number], default: [] }, // کاربرانی که این کاربر را لایک کردند
         matches: { type: [Number], default: [] }, // کاربرانی که Match شده اند
         pendingRequests: { type: [Number], default: [] }, // درخواست‌هایی که کاربر باید قبول کند
+        likesRemaining: { type: Number, default: 10 }, // تعداد لایک‌های باقی‌مانده
+        isPremium: { type: Boolean, default: false },  // آیا کاربر عضویت ویژه دارد؟
+        premiumUntil: { type: Date, default: null },   // تاریخ پایان عضویت ویژه
 
         bio: String,
         interests: String,
