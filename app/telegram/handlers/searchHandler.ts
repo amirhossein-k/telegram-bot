@@ -38,19 +38,15 @@ export async function searchHandler(ctx: any) {
     // جمع‌آوری عکس‌ها
     const urls = Object.values(targetUser.photos).filter(Boolean) as string[];
     if (urls.length > 0) {
-        // const media = photos.map((url, i) => ({
-        //     type: "photo",
-        //     media: url,
-        //     caption: i === 0 ? `👤 ${targetUser.name}, ${targetUser.age} سال` : undefined,
-        // }));
-        // await ctx.replyWithMediaGroup(media);
         const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
             type: "photo",
             media: url,
-            caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
+            caption: idx === 0 ? `👤 ${targetUser.name}, ${targetUser.age} سال` : undefined,
         }));
 
         await ctx.replyWithMediaGroup(media);
+    } else {
+        await ctx.reply(`👤 ${targetUser.name}, ${targetUser.age} سال\n📍 ${targetUser.city}`);
     }
     // else {
     //     await ctx.reply(`👤 ${targetUser.name}, ${targetUser.age} سال\n📍 ${targetUser.city}`);
