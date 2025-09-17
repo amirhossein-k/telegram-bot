@@ -9,6 +9,8 @@ import User from "../model/User";
 import { InputMedia, InputMediaPhoto, CallbackQuery } from "typegram";
 import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/searchHandler";
 
+import Message from "@/app/model/Message";
+import Chat from "../model/Chat";
 const activeChats = new Map<number, number>();
 
 
@@ -200,7 +202,7 @@ bot.action(/show_profile_\d+/, async (ctx) => {
     }
 });
 
-
+// هنگام قبول درخواست (شروع چت)
 bot.action(/accept_request_\d+/, async (ctx) => {
     await connectDB();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -219,13 +221,95 @@ bot.action(/accept_request_\d+/, async (ctx) => {
 
     await user.save();
     await otherUser.save();
+
+    // ایجاد رکورد چت جدید
+    const newChat = await Chat.create({
+        users: [user.telegramId, fromId],
+        startedAt: new Date(),
+        messages: [],
+    });
+
+
     // ثبت چت فعال
     activeChats.set(user.telegramId, fromId);
     activeChats.set(fromId, user.telegramId);
 
+    const keyboard = {
+        reply_markup: {
+            inline_keyboard: [[{ text: "❌ قطع ارتباط", callback_data: "end_chat" }]]
+        }
+    };
+
     await ctx.reply(`🎉 شما درخواست ${otherUser.name} را قبول کردید! حالا می‌توانید چت کنید.`);
-    await ctx.telegram.sendMessage(fromId, `🎉 کاربر ${user.name} درخواست شما را قبول کرد! حالا می‌توانید چت کنید.`);
+    await ctx.telegram.sendMessage(fromId, `🎉 کاربر ${user.name} درخواست شما را قبول کرد! حالا می‌توانید چت کنید.`, keyboard);
 });
+
+// دکمه قطع ارتباط
+bot.action("end_chat", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return;
+
+    const chatWith = activeChats.get(user.telegramId);
+    if (!chatWith) return ctx.reply("❌ شما در حال حاضر در چت فعال نیستید.");
+
+    // پایان دادن به چت در DB
+    await Chat.updateOne(
+        { users: { $all: [user.telegramId, chatWith] }, endedAt: { $exists: false } },
+        { $set: { endedAt: new Date() } }
+    );
+
+    // حذف از activeChats
+    activeChats.delete(user.telegramId);
+    activeChats.delete(chatWith);
+
+
+    // تابعی برای نمایش پروفایل کاربر
+    async function showProfile(targetId: number) {
+        const u = await User.findOne({ telegramId: targetId });
+        if (!u) return;
+
+        const urls = Object.values(u.photos).filter(Boolean) as string[];
+        if (urls.length > 0) {
+            const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
+                type: "photo",
+                media: url,
+                caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
+            }));
+            await ctx.telegram.sendMediaGroup(targetId, media);
+        }
+
+        const profileText = `
+👤 پروفایل شما:
+
+📝 نام: ${u.name || "-"}
+🚻 جنسیت: ${u.gender || "-"}
+🎂 سن: ${u.age || "-"}
+📍 استان: ${u.province || "-"}
+🏙 شهر: ${u.city || "-"}
+`;
+
+        await ctx.telegram.sendMessage(targetId, profileText, {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+                    [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+                    [{ text: "🔍 جستجو", callback_data: "search_profiles" }],
+                    [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
+                ],
+            },
+        });
+    }
+
+    // اطلاع به هر دو طرف + بازگرداندن به پروفایل
+    await ctx.reply("❌ شما چت را قطع کردید.");
+    await showProfile(user.telegramId);
+
+    await ctx.telegram.sendMessage(chatWith, `❌ کاربر ${user.name} چت را قطع کرد.`);
+    await showProfile(chatWith);
+
+});
+
 
 bot.action(/reject_request_\d+/, async (ctx) => {
     await connectDB();
@@ -241,7 +325,6 @@ bot.action(/reject_request_\d+/, async (ctx) => {
     await ctx.telegram.sendMessage(fromId, `❌ کاربر ${user.name} درخواست شما را رد کرد.`);
 });
 
-import Message from "@/app/model/Message";
 
 // ارسال پیام
 bot.on("text", async (ctx) => {
@@ -251,15 +334,34 @@ bot.on("text", async (ctx) => {
 
     // آیا کاربر در حال چت هست؟
     const chatWith = activeChats.get(user.telegramId);
+    const message = ctx.message.text;
+
+    // --- جلوگیری از ارسال شماره موبایل ایران ---
+    const iranPhoneRegex = /(\+98|0)?9\d{9}/g;
+
+    // --- جلوگیری از ارسال آیدی تلگرام ---
+    const telegramIdRegex = /@[\w_]{3,}/g;
+
+    // --- جلوگیری از ارسال متن انگلیسی ---
+    const englishRegex = /[A-Za-z]/g;
+
+    if (iranPhoneRegex.test(message) || telegramIdRegex.test(message)) {
+        return ctx.reply("❌ ارسال شماره تماس یا آیدی تلگرام مجاز نیست.");
+    }
+    if (englishRegex.test(message)) {
+        return ctx.reply("❌ ارسال پیام به زبان انگلیسی مجاز نیست. لطفاً فارسی تایپ کنید.");
+    }
 
     if (chatWith) {
-        const message = ctx.message.text;
 
         // ذخیره در دیتابیس
         await Message.create({
             from: user.telegramId,
             to: chatWith,
             text: message,
+            type: "text"
+
+
         });
 
         // ارسال پیام به طرف مقابل
@@ -272,6 +374,57 @@ bot.on("text", async (ctx) => {
     }
 });
 
+// پیام تصویری
+bot.on("photo", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return;
+
+    const chatWith = activeChats.get(user.telegramId);
+    if (!chatWith) return ctx.reply("❌ شما در حال حاضر در چت فعال نیستید.");
+
+    // گرفتن بهترین کیفیت تصویر
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const fileId = photo.file_id;
+
+    // ذخیره در دیتابیس
+    await Message.create({
+        from: user.telegramId,
+        to: chatWith,
+        photo: fileId,
+        type: "photo"
+    });
+
+    // ارسال به طرف مقابل
+    await ctx.telegram.sendPhoto(chatWith, fileId, {
+        caption: `📷 تصویر جدید از ${user.name}`
+    });
+});
+
+// پیام صوتی (ویس)
+bot.on("voice", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return;
+
+    const chatWith = activeChats.get(user.telegramId);
+    if (!chatWith) return ctx.reply("❌ شما در حال حاضر در چت فعال نیستید.");
+
+    const voice = ctx.message.voice.file_id;
+
+    // ذخیره در دیتابیس
+    await Message.create({
+        from: user.telegramId,
+        to: chatWith,
+        voice: voice,
+        type: "voice"
+    });
+
+    // ارسال به طرف مقابل
+    await ctx.telegram.sendVoice(chatWith, voice, {
+        caption: `🎤 ویس جدید از ${user.name}`
+    });
+});
 
 export async function POST(req: Request) {
     try {
