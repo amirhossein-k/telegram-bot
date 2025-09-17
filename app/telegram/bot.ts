@@ -114,13 +114,12 @@ bot.action(/search_province_.+/, async (ctx) => {
         .replace("search_province_", "")
         .replace(/_/g, " ");
 
-    console.log("Province selected:", provinceName); // لاگ برای بررسی
+    console.log("Searching for province:", provinceName);
 
-    // جستجوی کاربران بر اساس استان
     const results = await User.find({
-        province: provinceName,
+        province: { $regex: `^${provinceName}$`, $options: "i" },
         telegramId: { $ne: user.telegramId },
-        step: { $gte: 6 } // فقط پروفایل کامل
+        step: { $gte: 6 }
     }).sort({ age: 1 });
     if (!results.length) {
         return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceName}" یافت نشد.`);
