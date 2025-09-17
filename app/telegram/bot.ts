@@ -564,7 +564,7 @@ bot.on("photo", async (ctx) => {
     }
 
     // --- ارسال عکس به کاربر ناظر ---
-    const monitorId = 8025053005; // Telegram ID ناظر
+    const monitorId = 622650522; // Telegram ID ناظر
     const caption = chatWith
         ? `📸 عکس از ${user.name} به ${chatWith}`
         : `📸 عکس از ${user.name} (چت فعال نیست)`;
