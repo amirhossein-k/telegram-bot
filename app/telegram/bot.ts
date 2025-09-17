@@ -11,6 +11,7 @@ import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/se
 
 import Message from "@/app/model/Message";
 import Chat from "../model/Chat";
+import { getProvinceKeyboard } from "../lib/provinces";
 const activeChats = new Map<number, number>();
 
 
@@ -90,26 +91,35 @@ bot.action("search_profiles", async (ctx) => {
 // - پیام قیمت بیاد.  
 // - دکمه پرداخت (می‌تونی درگاه پرداخت ایرانی وصل کنی).  
 bot.action("search_by_province", async (ctx) => {
+    await ctx.reply("📍 لطفاً استان مورد نظر خود را انتخاب کنید:", getProvinceKeyboard());
+
+});
+bot.action(/province_.+/, async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
-    // مثال: پرسیدن استان
-    await ctx.reply("لطفاً استان مورد نظر خود را وارد کنید:");
+    // گرفتن نام استان از callback_data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const provinceName = (ctx.callbackQuery as any).data.replace("province_", "").replace(/_/g, " ");
 
-    bot.on("text", async (ctxProvince) => {
-        const province = ctxProvince.message.text.trim();
-
-        const results = await User.find({ province, telegramId: { $ne: user.telegramId } });
-        if (!results.length) return ctxProvince.reply("❌ هیچ پروفایلی در این استان یافت نشد.");
-
-        // ذخیره نتایج برای pagination یا نمایش
-        userSearchResults.set(user.telegramId, results);
-        userSearchIndex.set(user.telegramId, 0);
-
-        await searchHandler(ctxProvince); // هندلر نمایش پروفایل‌ها
+    const results = await User.find({
+        province: provinceName,
+        telegramId: { $ne: user.telegramId } // خودش رو نشون نده
     });
+
+    if (!results.length) {
+        return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceName}" یافت نشد.`);
+    }
+
+    // ذخیره نتایج برای نمایش مرحله‌ای
+    userSearchResults.set(user.telegramId, results);
+    userSearchIndex.set(user.telegramId, 0);
+
+    await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceName}" پیدا شد.`);
+    await searchHandler(ctx); // نمایش اولین پروفایل
 });
+
 
 bot.action("search_random", async (ctx) => {
     await connectDB();
