@@ -1,4 +1,4 @@
-import mongoose, { Schema, models, model } from "mongoose";
+import { Schema, models, model } from "mongoose";
 
 const userSchema = new Schema(
     {
@@ -25,6 +25,7 @@ const userSchema = new Schema(
         likes: { type: [Number], default: [] }, // کاربرانی که این کاربر لایک کرده
         likedBy: { type: [Number], default: [] }, // کاربرانی که این کاربر را لایک کردند
         matches: { type: [Number], default: [] }, // کاربرانی که Match شده اند
+        pendingRequests: { type: [Number], default: [] }, // درخواست‌هایی که کاربر باید قبول کند
 
         bio: String,
         interests: String,

@@ -115,7 +115,7 @@ bot.action(/like_\d+/, async (ctx) => {
 
     // ثبت در likedBy کاربر مقابل و اطلاع
     if (!likedUser.likedBy.includes(user.telegramId)) {
-        likedUser.likedBy.push(user.telegramId);
+        likedUser.pendingRequests.push(user.telegramId); // اضافه کردن به درخواست‌های در انتظار
         await likedUser.save();
 
         // اطلاع به کاربر B
@@ -124,7 +124,11 @@ bot.action(/like_\d+/, async (ctx) => {
             {
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: "مشاهده پروفایل", callback_data: `show_profile_${user.telegramId}` }]
+                        [{ text: "مشاهده پروفایل", callback_data: `show_profile_${user.telegramId}` }],
+                        [
+                            { text: "قبول درخواست", callback_data: `accept_request_${user.telegramId}` },
+                            { text: "رد کردن", callback_data: `reject_request_${user.telegramId}` }
+                        ]
                     ]
                 }
             });
@@ -192,6 +196,67 @@ bot.action(/show_profile_\d+/, async (ctx) => {
     } else {
         await ctx.reply(profileText);
     }
+});
+
+bot.action(/accept_request_\d+/, async (ctx) => {
+    await connectDB();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fromId = Number((ctx.callbackQuery as any)?.data.replace("accept_request_", ""));
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    const otherUser = await User.findOne({ telegramId: fromId });
+    if (!user || !otherUser) return ctx.reply("❌ کاربر پیدا نشد.");
+
+    // Match کامل
+    if (!user.matches.includes(fromId)) user.matches.push(fromId);
+    if (!otherUser.matches.includes(user.telegramId)) otherUser.matches.push(user.telegramId);
+
+    // حذف از pending
+    user.pendingRequests = user.pendingRequests.filter((id: number) => id !== fromId);
+
+    await user.save();
+    await otherUser.save();
+
+    await ctx.reply(`🎉 شما درخواست ${otherUser.name} را قبول کردید! حالا می‌توانید چت کنید.`);
+    await ctx.telegram.sendMessage(fromId, `🎉 کاربر ${user.name} درخواست شما را قبول کرد! حالا می‌توانید چت کنید.`);
+});
+
+bot.action(/reject_request_\d+/, async (ctx) => {
+    await connectDB();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fromId = Number((ctx.callbackQuery as any)?.data.replace("reject_request_", ""));
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return;
+
+    user.pendingRequests = user.pendingRequests.filter((id: number) => id !== fromId);
+    await user.save();
+
+    await ctx.reply("❌ درخواست رد شد.");
+    await ctx.telegram.sendMessage(fromId, `❌ کاربر ${user.name} درخواست شما را رد کرد.`);
+});
+
+import Message from "@/app/model/Message";
+
+// ارسال پیام
+bot.on("text", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return;
+
+    // چک کنید آیا user در حال چت با کسی هست (مثلاً lastChatWith در حافظه یا DB)
+    const chatWith = user.lastChatWith;
+    if (!chatWith) return profileHandler()(ctx); // اگر چت نداریم، هندلر پروفایل
+
+    const message = ctx.message.text;
+
+    // ذخیره در دیتابیس
+    await Message.create({
+        from: user.telegramId,
+        to: chatWith,
+        text: message,
+    });
+
+    // ارسال به گیرنده
+    await ctx.telegram.sendMessage(chatWith, `💬 ${user.name}: ${message}`);
 });
 
 
