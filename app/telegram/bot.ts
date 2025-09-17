@@ -6,7 +6,7 @@ import { photoUploadHandler, setPhotoSlotHandler } from "./handlers/photoHandler
 import { startHandler } from "./handlers/start";
 import { connectDB } from "../lib/mongodb";
 import User from "../model/User";
-import { InputMediaPhoto } from "typegram";
+import { InputMedia, InputMediaPhoto } from "typegram";
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -30,20 +30,21 @@ bot.action("show_profile", async (ctx) => {
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
     // نمایش آلبوم عکس‌ها
+    // اگر کاربر عکس دارد
     if (user.photos) {
-        const urls = Object.values(user.photos).filter((url) => !!url) as string[];
+        // const urls = Object.values(user.photos).filter((url) => !!url) as string[];
+        const urls = Object.values(user.photos).filter(Boolean) as string[];
 
         if (urls.length > 0) {
-
-
             const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
                 type: "photo",
-                media: url, // اینجا حالا TS می‌دونه string هست
+                media: url,
                 caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
             }));
 
             await ctx.replyWithMediaGroup(media);
         }
+
     }
     // متن پروفایل
     const profileText = `
