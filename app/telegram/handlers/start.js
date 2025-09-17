@@ -57,6 +57,7 @@ export function startHandler() {
               [{ text: "👤 پروفایل من", callback_data: "show_profile" }],
               [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
               [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+              [{ text: "🔍 جستجو", callback_data: "search_profiles" }], // دکمه جستجو اضافه شد
             ],
           },
         }
