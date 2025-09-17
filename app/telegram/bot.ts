@@ -66,7 +66,9 @@ bot.action("show_profile", async (ctx) => {
     const buttons: any[] = [
         [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
         [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
-        [{ text: "🔍 جستجو", callback_data: "search_profiles" }],
+        // [{ text: "🔍 جستجو", callback_data: "search_profiles" }],
+        [{ text: "🔍 جستجو بر اساس استان", callback_data: "search_by_province" }],
+        [{ text: "🎲 جستجوی تصادفی", callback_data: "search_random" }],
         [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
     ];
 
@@ -87,6 +89,43 @@ bot.action("search_profiles", async (ctx) => {
 // وقتی کاربر دکمه "⭐️ عضویت ویژه" رو بزنه:  
 // - پیام قیمت بیاد.  
 // - دکمه پرداخت (می‌تونی درگاه پرداخت ایرانی وصل کنی).  
+bot.action("search_by_province", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    // مثال: پرسیدن استان
+    await ctx.reply("لطفاً استان مورد نظر خود را وارد کنید:");
+
+    bot.on("text", async (ctxProvince) => {
+        const province = ctxProvince.message.text.trim();
+
+        const results = await User.find({ province, telegramId: { $ne: user.telegramId } });
+        if (!results.length) return ctxProvince.reply("❌ هیچ پروفایلی در این استان یافت نشد.");
+
+        // ذخیره نتایج برای pagination یا نمایش
+        userSearchResults.set(user.telegramId, results);
+        userSearchIndex.set(user.telegramId, 0);
+
+        await searchHandler(ctxProvince); // هندلر نمایش پروفایل‌ها
+    });
+});
+
+bot.action("search_random", async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    const allUsers = await User.find({ telegramId: { $ne: user.telegramId } });
+    if (!allUsers.length) return ctx.reply("❌ هیچ پروفایلی برای نمایش نیست.");
+
+    // انتخاب تصادفی
+    const shuffled = allUsers.sort(() => 0.5 - Math.random());
+    userSearchResults.set(user.telegramId, shuffled);
+    userSearchIndex.set(user.telegramId, 0);
+
+    await searchHandler(ctx); // نمایش اولین پروفایل
+});
 
 
 bot.action("buy_premium", async (ctx) => {

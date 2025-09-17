@@ -57,7 +57,13 @@ export function startHandler() {
               [{ text: "👤 پروفایل من", callback_data: "show_profile" }],
               [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
               [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
-              [{ text: "🔍 جستجو", callback_data: "search_profiles" }], // دکمه جستجو اضافه شد
+              [
+                {
+                  text: "🔍 جستجو بر اساس استان",
+                  callback_data: "search_by_province",
+                },
+              ],
+              [{ text: "🎲 جستجوی تصادفی", callback_data: "search_random" }],
             ],
           },
         }
