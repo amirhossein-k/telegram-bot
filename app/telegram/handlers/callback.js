@@ -2,6 +2,7 @@
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
 import { getCityKeyboard } from "@/app/lib/cities";
+import { searchHandler } from "./searchHandler";
 
 export function callbackHandler() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,6 +106,61 @@ export function callbackHandler() {
           },
         }
       );
+    }
+    if (data === "search_profiles") {
+      return searchHandler(ctx);
+    }
+    // next و like
+    if (data === "next_profile") {
+      const index = userSearchIndex.get(ctx.from.id) || 0;
+      const results = userSearchResults.get(ctx.from.id);
+      if (!results || results.length === 0)
+        return ctx.reply("❌ هیچ پروفایلی برای نمایش نیست.");
+
+      const nextIndex = (index + 1) % results.length;
+      userSearchIndex.set(ctx.from.id, nextIndex);
+      return searchHandler(ctx); // نمایش پروفایل بعدی
+    }
+
+    if (data.startsWith("like_")) {
+      const likedId = Number(data.replace("like_", ""));
+      await connectDB();
+
+      const likedUser = await User.findOne({ telegramId: likedId });
+      if (!likedUser) return ctx.reply("❌ کاربر پیدا نشد.");
+
+      // ثبت لایک برای کاربر فعلی
+      if (!user.likes.includes(likedId)) {
+        user.likes.push(likedId);
+        await user.save();
+      }
+
+      // بررسی اینکه طرف مقابل هم کاربر فعلی را لایک کرده باشد
+      if (
+        likedUser.likes.includes(user.telegramId) &&
+        !user.matches.includes(likedId)
+      ) {
+        // اضافه کردن به لیست Match هر دو
+        user.matches.push(likedId);
+        likedUser.matches.push(user.telegramId);
+
+        await user.save();
+        await likedUser.save();
+
+        // اطلاع‌رسانی به هر دو
+        await ctx.telegram.sendMessage(
+          user.telegramId,
+          `🎉 شما با ${likedUser.name} Match شدید! حالا می‌توانید با هم صحبت کنید.`
+        );
+        await ctx.telegram.sendMessage(
+          likedUser.telegramId,
+          `🎉 شما با ${user.name} Match شدید! حالا می‌توانید با هم صحبت کنید.`
+        );
+      } else {
+        // فقط لایک ثبت شد
+        await ctx.reply("✅ لایک ثبت شد!");
+      }
+      return;
     }
   };
 }
