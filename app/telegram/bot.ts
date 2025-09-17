@@ -94,14 +94,14 @@ bot.action("search_by_province", async (ctx) => {
     await ctx.reply("📍 لطفاً استان مورد نظر خود را انتخاب کنید:", getProvinceKeyboard());
 
 });
-bot.action(/province_.+/, async (ctx) => {
+bot.action(/search_province_.+/, async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
     // گرفتن نام استان از callback_data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const provinceName = (ctx.callbackQuery as any).data.replace("province_", "").replace(/_/g, " ");
+    const provinceName = (ctx.callbackQuery as any).data.replace("search_province_", "").replace(/_/g, " ");
 
     const results = await User.find({
         province: provinceName,
@@ -435,8 +435,13 @@ bot.action("end_chat", async (ctx) => {
                 inline_keyboard: [
                     [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
                     [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
-                    [{ text: "🔍 جستجو", callback_data: "search_profiles" }],
-                    [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
+                    [
+                        {
+                            text: "🔍 جستجو بر اساس استان",
+                            callback_data: "search_by_province",
+                        },
+                    ],
+                    [{ text: "🎲 جستجوی تصادفی", callback_data: "search_random" }], [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
                 ],
             },
         });
