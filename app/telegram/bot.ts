@@ -119,7 +119,7 @@ bot.action(/like_\d+/, async (ctx) => {
 
     // ثبت در likedBy کاربر مقابل و اطلاع
     if (!likedUser.likedBy.includes(user.telegramId)) {
-        likedUser.pendingRequests.push(user.telegramId); // اضافه کردن به درخواست‌های در انتظار
+        likedUser.likedBy.push(user.telegramId); // اضافه کردن به درخواست‌های در انتظار
         await likedUser.save();
 
         // اطلاع به کاربر B
@@ -162,10 +162,13 @@ bot.action("liked_by_me", async (ctx) => {
 
     // ساخت دکمه‌ها برای هر کاربر
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const keyboard = user.likedBy.map((id: any) => [{
-        text: `👤 ${id}`, // بعدا می‌توانیم اسم واقعی کاربر را جایگزین کنیم
-        callback_data: `show_profile_${id}`
-    }]);
+    const keyboard = [];
+    for (const id of user.likedBy) {
+        const u = await User.findOne({ telegramId: id });
+        if (u) {
+            keyboard.push([{ text: `👤 ${u.name}`, callback_data: `show_profile_${u.telegramId}` }]);
+        }
+    }
 
     await ctx.reply("💌 کسانی که شما را لایک کردند:", {
         reply_markup: { inline_keyboard: keyboard }
