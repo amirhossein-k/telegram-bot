@@ -2,7 +2,7 @@
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
 import { getProvinceKeyboard } from '@/app/lib/provinces'
-import { getCityKeyboard } from "@/app/lib/cities";
+import { getCityKeyboard, provinces, cities } from "@/app/lib/cities";
 
 export function profileHandler() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,17 +82,18 @@ export function profileHandler() {
             case 5:      // 📍 مرحله ۵: انتخاب شهر
 
                 if (ctx.callbackQuery?.data?.startsWith("city_")) {
-                    const city = ctx.callbackQuery.data.replace("city_", "");
-                    user.city = city;
+                    const [_, provinceCode, cityCode] = ctx.callbackQuery.data.split("_");
+                    user.city = cityCode;
                     user.step = 6; // پروفایل تکمیل شد
                     await user.save();
-
+                    const provinceName = provinces[user.province];   // نام فارسی استان
+                    const cityName = cities[user.province]?.[user.city]; // نام فارسی شهر
                     await ctx.answerCbQuery("پروفایل شما کامل شد!");
 
                     return ctx.telegram.sendMessage(
                         ctx.chat.id,
-                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${user.province}\n🏙 شهر: ${user.city}`,
-                        {
+                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${provinceName}\n🏙 شهر: ${cityName}`
+                        , {
                             reply_markup: {
                                 inline_keyboard: [
                                     [{ text: "👤 پروفایل من", callback_data: "show_profile" }],

@@ -88,14 +88,18 @@ export function callbackHandler() {
 
     // مرحله ۵: انتخاب شهر
     if (data.startsWith("city_") && user?.step === 5) {
-      const city = data.replace("city_", "");
-      user.city = city;
+      const [_, provinceCode, cityCode] = data.split("_");
+      user.city = cityCode;
       user.step = 6; // پروفایل تکمیل شد
       await user.save();
 
       await ctx.answerCbQuery();
       return ctx.reply(
-        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${user.province}\n🏙 شهر: ${user.city}\n\n⚠️ استفاده از ربات به منزله پذیرش قوانین است.`,
+        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${
+          user.gender
+        }\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${
+          cities[user.province][user.city]
+        }`,
         {
           reply_markup: {
             inline_keyboard: [
