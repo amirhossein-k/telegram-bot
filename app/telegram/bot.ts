@@ -605,6 +605,7 @@ bot.action(/reject_request_\d+/, async (ctx) => {
 
 // ارسال پیام
 bot.on("text", async (ctx) => {
+
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return;

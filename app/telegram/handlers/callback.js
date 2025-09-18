@@ -11,6 +11,13 @@ export function callbackHandler() {
   return async (ctx) => {
     const data = ctx.callbackQuery?.data;
     if (!data) return;
+    // ⚠️ اضافه کردن بررسی چت فعال
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+      return ctx.reply(
+        "❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید."
+      );
+    }
 
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
