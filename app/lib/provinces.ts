@@ -33,14 +33,26 @@ export const provinces: { [key: string]: string } = {
 };
 
 export function getProvinceKeyboard(forSearch = false) {
-  const keyboard = Object.keys(provinces).map((key) => [
-    {
-      text: provinces[key],
-      callback_data: forSearch
-        ? `search_province_${key}`
-        : `profile_province_${key}`,
-    },
-  ]);
+  const keys = Object.keys(provinces);
+  const keyboard = [];
+
+  for (let i = 0; i < keys.length; i += 2) {
+    const row = [];
+
+    row.push({
+      text: provinces[keys[i]],
+      callback_data: forSearch ? `search_province_${keys[i]}` : `profile_province_${keys[i]}`,
+    });
+
+    if (keys[i + 1]) {
+      row.push({
+        text: provinces[keys[i + 1]],
+        callback_data: forSearch ? `search_province_${keys[i + 1]}` : `profile_province_${keys[i + 1]}`,
+      });
+    }
+
+    keyboard.push(row);
+  }
 
   return { reply_markup: { inline_keyboard: keyboard } };
 }
