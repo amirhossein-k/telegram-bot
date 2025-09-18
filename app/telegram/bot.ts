@@ -184,6 +184,8 @@ bot.action(/search_city_.+/, async (ctx) => {
     const results = await User.find({
         province: provinceKey,
         city: cityCode,
+        gender: user.gender === "female" ? "male" : "female",
+
         telegramId: { $ne: user.telegramId },
         step: { $gte: 6 },
     });
@@ -210,7 +212,12 @@ bot.action("search_random", async (ctx) => {
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
-    const allUsers = await User.find({ telegramId: { $ne: user.telegramId } });
+    // فقط کاربران با جنسیت مخالف و پروفایل کامل
+    const allUsers = await User.find({
+        telegramId: { $ne: user.telegramId },
+        step: { $gte: 6 },
+        gender: user.gender === "female" ? "male" : "female",
+    });
     if (!allUsers.length) return ctx.reply("❌ هیچ پروفایلی برای نمایش نیست.");
 
     // انتخاب تصادفی
