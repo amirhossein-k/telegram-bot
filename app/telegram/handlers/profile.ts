@@ -2,7 +2,7 @@
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
 import { getProvinceKeyboard, provinces } from '@/app/lib/provinces'
-import { getCityKeyboard } from "@/app/lib/cities";
+import { cities, getCityKeyboard } from "@/app/lib/cities";
 
 export function profileHandler() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,27 +84,32 @@ export function profileHandler() {
             case 5:      // 📍 مرحله ۵: انتخاب شهر
 
                 if (ctx.callbackQuery?.data?.startsWith("profile_city_")) {
-                    const city = ctx.callbackQuery.data.replace("profile_city_", "");
-                    user.city = city;
+                    const parts = ctx.callbackQuery.data.split("_");
+                    const provinceCode = parts.slice(2, parts.length - 1).join("_");
+                    const cityCode = parts[parts.length - 1];
+
+                    user.province = provinceCode;
+                    user.city = cityCode;
+
                     user.step = 6; // پروفایل تکمیل شد
                     await user.save();
 
                     await ctx.answerCbQuery("پروفایل شما کامل شد!");
-                    const provinceName = provinces[user.province] || user.province;
 
                     return ctx.telegram.sendMessage(
                         ctx.chat.id,
-                        `✅ پروفایل شما ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${provinceName}\n🏙 شهر: ${user.city}`,
-                        {
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [{ text: "👤 پروفایل من", callback_data: "show_profile" }],
-                                    [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
-                                    [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
-                                ],
+                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender
+                        }\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${cities[user.province][user.city]
+                        }`, {
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: "👤 پروفایل من", callback_data: "show_profile" }],
+                                [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+                                [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+                            ],
 
-                            },
-                        }
+                        },
+                    }
                     );
                 }
                 break;
