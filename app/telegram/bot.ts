@@ -31,6 +31,10 @@ bot.action(["photo_slot_1", "photo_slot_2", "photo_slot_3", "back_to_photo_menu"
 // bot.on("photo", photoUploadHandler());
 // ---- نمایش پروفایل شخصی ----
 bot.action("show_profile", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
@@ -95,6 +99,10 @@ bot.action("show_profile", async (ctx) => {
 });
 // ---- جستجو ----
 bot.action("search_profiles", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await searchHandler(ctx);
 });
 // 4. **هندل خرید عضویت ویژه (buy_premium)**  
@@ -102,7 +110,10 @@ bot.action("search_profiles", async (ctx) => {
 // - پیام قیمت بیاد.  
 // - دکمه پرداخت (می‌تونی درگاه پرداخت ایرانی وصل کنی).  
 bot.action("search_by_province", async (ctx) => {
-
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
 
     await ctx.reply(
         "📍 لطفاً استان مورد نظر خود را انتخاب کنید:",
@@ -110,7 +121,10 @@ bot.action("search_by_province", async (ctx) => {
     );
 });
 bot.action(/search_province_.+/, async (ctx) => {
-
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
@@ -148,6 +162,10 @@ bot.action(/search_province_.+/, async (ctx) => {
     // await searchHandler(ctx); // نمایش اولین پروفایل
 });
 bot.action(/search_city_.+/, async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
@@ -182,6 +200,10 @@ bot.action(/search_city_.+/, async (ctx) => {
 
 
 bot.action("search_random", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
@@ -199,6 +221,10 @@ bot.action("search_random", async (ctx) => {
 
 
 bot.action("buy_premium", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await ctx.reply("⭐️ عضویت ویژه\n\n✅ قیمت: 10,000 تومان\nبا خرید عضویت ویژه می‌توانید لایک نامحدود داشته باشید.", {
         reply_markup: {
             inline_keyboard: [
@@ -212,6 +238,10 @@ bot.action("buy_premium", async (ctx) => {
 // دکمه بعدی پروفایل در جستجو
 // ---- پروفایل بعدی در جستجو ----
 bot.action("next_profile", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
@@ -227,6 +257,10 @@ bot.action("next_profile", async (ctx) => {
 
 // ---- لایک کاربر ----
 bot.action(/like_\d+/, async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
 
     // داخل handler دکمه
@@ -301,6 +335,10 @@ bot.action(/like_\d+/, async (ctx) => {
 });
 // ---- مشاهده کسانی که شما را لایک کردند ----
 bot.action("liked_by_me", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
@@ -323,6 +361,10 @@ bot.action("liked_by_me", async (ctx) => {
 });
 // ---- مشاهده پروفایل کاربر از دکمه ----
 bot.action(/show_profile_\d+/, async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const targetId = Number((ctx.callbackQuery as any)?.data.replace("show_profile_", ""));
@@ -368,6 +410,10 @@ bot.action(/show_profile_\d+/, async (ctx) => {
 });
 // ---- در لایک ها شروع چت از طریق "قبول درخواست چت" ----
 bot.action(/start_chat_\d+/, async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const targetId = Number((ctx.callbackQuery as any)?.data.replace("start_chat_", ""));
@@ -405,6 +451,10 @@ bot.action(/start_chat_\d+/, async (ctx) => {
 
 // هنگام قبول درخواست (شروع چت)
 bot.action(/accept_request_\d+/, async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fromId = Number((ctx.callbackQuery as any)?.data.replace("accept_request_", ""));
@@ -535,6 +585,10 @@ setInterval(async () => {
 
 
 bot.action(/reject_request_\d+/, async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
     await connectDB();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fromId = Number((ctx.callbackQuery as any)?.data.replace("reject_request_", ""));
