@@ -14,7 +14,7 @@ import Chat from "../model/Chat";
 import { getProvinceKeyboard, provinces } from "../lib/provinces";
 import { cities, getCityKeyboard } from "../lib/cities";
 const activeChats = new Map<number, number>();
-const editState = new Map<number, "about" | "searching" | "interests">();
+const editState = new Map<number, "about" | "searching" | "interests" | "name" | "age">();
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -602,20 +602,37 @@ setInterval(async () => {
 //         await ctx.reply("🍿 لطفاً علایق و سرگرمی‌های خود را وارد کنید (با ویرگول جدا کنید):");
 //     }
 // });
-bot.action(/^(edit_about|edit_searching|edit_interests)$/, async (ctx) => {
+bot.action(/^(edit_name|edit_age|edit_about|edit_searching|edit_interests)$/, async (ctx) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (ctx.callbackQuery as any).data;
     if (data === "edit_about") editState.set(ctx.from.id, "about");
     if (data === "edit_searching") editState.set(ctx.from.id, "searching");
     if (data === "edit_interests") editState.set(ctx.from.id, "interests");
+    if (data === "edit_name") editState.set(ctx.from.id, "name");
+    if (data === "edit_age") editState.set(ctx.from.id, "age");
 
-    await ctx.reply(
-        data === "edit_about"
-            ? "✏️ لطفاً متن جدید بخش 'درباره من' را وارد کنید:"
-            : data === "edit_searching"
-                ? "🔎 لطفاً متن جدید بخش 'دنبال چی هستم' را وارد کنید:"
-                : "🍿 لطفاً علایق و سرگرمی‌های خود را وارد کنید (با ویرگول جدا کنید):"
-    );
+
+    let message = "";
+    switch (data) {
+        case "edit_about":
+            message = "✏️ لطفاً متن جدید بخش 'درباره من' را وارد کنید:";
+            break;
+        case "edit_searching":
+            message = "🔎 لطفاً متن جدید بخش 'دنبال چی هستم' را وارد کنید:";
+            break;
+        case "edit_interests":
+            message = "🍿 لطفاً علایق و سرگرمی‌های خود را وارد کنید (با ویرگول جدا کنید):";
+            break;
+        case "edit_name":
+            message = "📝 لطفاً نام جدید خود را وارد کنید:";
+            break;
+        case "edit_age":
+            message = "🎂 لطفاً سن جدید خود را وارد کنید (فقط عدد):";
+            break;
+    }
+
+    await ctx.reply(message);
+
 });
 bot.action(/reject_request_\d+/, async (ctx) => {
     const chatWith = activeChats.get(ctx.from.id);
@@ -642,13 +659,21 @@ bot.on("text", async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return;
+
     const state = editState.get(ctx.from.id);
     if (state) {
         // ویرایش بخش پروفایل
         if (state === "about") user.bio = ctx.message.text;
         if (state === "searching") user.lookingFor = ctx.message.text;
         if (state === "interests") user.interests = ctx.message.text.split(/,|،/).map((s) => s.trim());
-
+        if (state === 'name') user.name = ctx.message.text
+        if (state === 'age') {
+            const ageNum = Number(ctx.message.text.trim())
+            if (isNaN(ageNum)) {
+                return ctx.reply("❌ حروف انگلیسی)لطفاً فقط عدد برای سن وارد کنید.)");
+            }
+            user.age = ageNum
+        }
         await user.save();
         editState.delete(ctx.from.id);
 
@@ -769,6 +794,22 @@ bot.on("voice", async (ctx) => {
     });
 });
 
+bot.action("edit_personal", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) return ctx.reply("❌ ابتدا چت فعال را قطع کنید.");
+
+    // نمایش گزینه‌های شخصی: نام و سن
+    await ctx.reply("👤 بخش شخصی — کدام مورد را می‌خواهی ویرایش کنی؟", {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: "📝 نام", callback_data: "edit_name" }],
+                [{ text: "🎂 سن", callback_data: "edit_age" }],
+                [{ text: "⬅️ بازگشت", callback_data: "edit_profile" }],
+            ]
+        }
+    })
+
+})
 
 // commands
 
