@@ -14,6 +14,7 @@ import Chat from "../model/Chat";
 import { getProvinceKeyboard, provinces } from "../lib/provinces";
 import { cities, getCityKeyboard } from "../lib/cities";
 const activeChats = new Map<number, number>();
+const editState = new Map<number, "about" | "searching" | "interests">();
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -584,7 +585,38 @@ setInterval(async () => {
     }
 }, 2 * 60 * 1000); // هر 2 دقیقه
 
+// bot.action(/^(edit_about|edit_searching|edit_interests)$/, async (ctx) => {
+//     await connectDB();
+//     const user = await User.findOne({ telegramId: ctx.from.id });
+//     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     if ((ctx.callbackQuery as any).data === "edit_about") {
+//         await ctx.reply("✏️ لطفاً متن جدید بخش 'درباره من' را وارد کنید:");
+//         // حالا باید هندلر پیام بعدی این متن را ذخیره کند
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     } else if ((ctx.callbackQuery as any).data === "edit_searching") {
+//         await ctx.reply("🔎 لطفاً متن جدید بخش 'دنبال چی هستم' را وارد کنید:");
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     } else if ((ctx.callbackQuery as any).data === "edit_interests") {
+//         await ctx.reply("🍿 لطفاً علایق و سرگرمی‌های خود را وارد کنید (با ویرگول جدا کنید):");
+//     }
+// });
+bot.action(/^(edit_about|edit_searching|edit_interests)$/, async (ctx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (ctx.callbackQuery as any).data;
+    if (data === "edit_about") editState.set(ctx.from.id, "about");
+    if (data === "edit_searching") editState.set(ctx.from.id, "searching");
+    if (data === "edit_interests") editState.set(ctx.from.id, "interests");
+
+    await ctx.reply(
+        data === "edit_about"
+            ? "✏️ لطفاً متن جدید بخش 'درباره من' را وارد کنید:"
+            : data === "edit_searching"
+                ? "🔎 لطفاً متن جدید بخش 'دنبال چی هستم' را وارد کنید:"
+                : "🍿 لطفاً علایق و سرگرمی‌های خود را وارد کنید (با ویرگول جدا کنید):"
+    );
+});
 bot.action(/reject_request_\d+/, async (ctx) => {
     const chatWith = activeChats.get(ctx.from.id);
     if (chatWith) {
@@ -610,6 +642,19 @@ bot.on("text", async (ctx) => {
     await connectDB();
     const user = await User.findOne({ telegramId: ctx.from.id });
     if (!user) return;
+    const state = editState.get(ctx.from.id);
+    if (state) {
+        // ویرایش بخش پروفایل
+        if (state === "about") user.bio = ctx.message.text;
+        if (state === "searching") user.lookingFor = ctx.message.text;
+        if (state === "interests") user.interests = ctx.message.text.split(/,|،/).map((s) => s.trim());
+
+        await user.save();
+        editState.delete(ctx.from.id);
+
+        return ctx.reply("✅ تغییرات ذخیره شد!");
+    }
+
 
     // آیا کاربر در حال چت هست؟
     const chatWith = activeChats.get(user.telegramId);

@@ -1,3 +1,4 @@
+// app\api\telegram\route.ts
 import bot from "@/app/telegram/bot";
 
 export async function POST(req: Request) {
