@@ -92,14 +92,17 @@ export function callbackHandler() {
     // مرحله ۵: انتخاب شهر
     if (data.startsWith("profile_city_") && user?.step === 5) {
       const parts = data.split("_");
-      const provinceCode = parts.slice(2, parts.length - 1).join("_");
-      const cityCode = parts[parts.length - 1]; // tabriz
+      // حذف profile و city → مابقی میشه [provinceKey..., cityKey]
+      const provinceAndCity = parts.slice(2);
+      const provinceCode = provinceAndCity.slice(0, -1).join("_"); // همه‌ی بخش‌ها به جز آخری
+      const cityCode = provinceAndCity.slice(-1)[0]; // آخرین بخش = شهر
+
       user.province = provinceCode;
       user.city = cityCode;
       user.step = 6; // پروفایل تکمیل شد
       await user.save();
 
-      await ctx.answerCbQuery("✅ شهرت انتخاب شد!");
+      ctx.answerCbQuery("✅ شهرت انتخاب شد!").catch(() => {});
       return ctx.reply(
         `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${
           user.gender
