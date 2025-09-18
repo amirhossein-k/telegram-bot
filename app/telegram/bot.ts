@@ -12,7 +12,7 @@ import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/se
 import Message from "@/app/model/Message";
 import Chat from "../model/Chat";
 import { getProvinceKeyboard, provinces } from "../lib/provinces";
-import { getCityKeyboard } from "../lib/cities";
+import { cities, getCityKeyboard } from "../lib/cities";
 const activeChats = new Map<number, number>();
 
 
@@ -120,22 +120,22 @@ bot.action(/search_province_.+/, async (ctx) => {
     );
 
     // بعد نتایج رو آماده کن
-    const results = await User.find({
-        province: provinceKey,
-        telegramId: { $ne: user.telegramId },
-        step: { $gte: 6 },
-    });
+    // const results = await User.find({
+    //     province: provinceKey,
+    //     telegramId: { $ne: user.telegramId },
+    //     step: { $gte: 6 },
+    // });
 
-    if (!results.length) {
-        return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceLabel}" یافت نشد.`);
-    }
+    // if (!results.length) {
+    //     return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceLabel}" یافت نشد.`);
+    // }
 
-    // ذخیره نتایج برای نمایش مرحله‌ای
-    userSearchResults.set(user.telegramId, results);
-    userSearchIndex.set(user.telegramId, 0);
+    // // ذخیره نتایج برای نمایش مرحله‌ای
+    // userSearchResults.set(user.telegramId, results);
+    // userSearchIndex.set(user.telegramId, 0);
 
-    await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceLabel}" پیدا شد.`);
-    await searchHandler(ctx); // نمایش اولین پروفایل
+    // await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceLabel}" پیدا شد.`);
+    // await searchHandler(ctx); // نمایش اولین پروفایل
 });
 bot.action(/search_city_.+/, async (ctx) => {
     await connectDB();
@@ -143,16 +143,21 @@ bot.action(/search_city_.+/, async (ctx) => {
     if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cityCode = (ctx.callbackQuery as any).data.replace("search_city_", "");
+    const parts = (ctx.callbackQuery as any).data.split("_");
+    const provinceKey = parts[2]; // مثلا tehran
+    const cityCode = parts[3];    // مثلا varamin
+    const cityLabel = cities[provinceKey]?.[cityCode] || cityCode;
+
+    await ctx.answerCbQuery("✅ شهر انتخاب شد!");
 
     // کاربرهای همان شهر
     const results = await User.find({
+        province: provinceKey,
         city: cityCode,
         telegramId: { $ne: user.telegramId },
         step: { $gte: 6 },
     });
 
-    await ctx.answerCbQuery();
 
     if (!results.length) {
         return ctx.reply(`❌ هیچ پروفایلی در شهر "${cityCode}" پیدا نشد.`);
@@ -161,7 +166,7 @@ bot.action(/search_city_.+/, async (ctx) => {
     userSearchResults.set(user.telegramId, results);
     userSearchIndex.set(user.telegramId, 0);
 
-    await ctx.reply(`✅ ${results.length} پروفایل در این شهر پیدا شد.`);
+    await ctx.reply(`✅ ${results.length} پروفایل در شهر "${cityLabel}" پیدا شد.`);
     await searchHandler(ctx); // نمایش اولین پروفایل
 });
 

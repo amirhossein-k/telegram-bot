@@ -208,13 +208,13 @@ export function getCityKeyboard(provinceKey: string, forSearch = false) {
 
         row.push({
             text: provinceCities[keys[i]],
-            callback_data: forSearch ? `search_city_${keys[i]}` : `profile_city_${provinceKey}_${keys[i]}`,
+            callback_data: forSearch ? `search_city_${provinceKey}_${keys[i]}` : `profile_city_${provinceKey}_${keys[i]}`,
         });
 
         if (keys[i + 1]) {
             row.push({
                 text: provinceCities[keys[i + 1]],
-                callback_data: forSearch ? `search_city_${keys[i + 1]}` : `profile_city_${provinceKey}_${keys[i + 1]}`,
+                callback_data: forSearch ? `search_city_${provinceKey}_${keys[i + 1]}` : `profile_city_${provinceKey}_${keys[i + 1]}`,
             });
         }
 
