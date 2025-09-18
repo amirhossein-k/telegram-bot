@@ -12,6 +12,7 @@ import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/se
 import Message from "@/app/model/Message";
 import Chat from "../model/Chat";
 import { getProvinceKeyboard, provinces } from "../lib/provinces";
+import { getCityKeyboard } from "../lib/cities";
 const activeChats = new Map<number, number>();
 
 
@@ -110,6 +111,12 @@ bot.action(/search_province_.+/, async (ctx) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const provinceKey = (ctx.callbackQuery as any).data.replace("search_province_", "");
     const provinceLabel = provinces[provinceKey] || provinceKey;
+    await ctx.answerCbQuery();
+
+    return ctx.reply(
+        `🏙 شهر مورد نظر در استان "${provinceLabel}" را انتخاب کن:`,
+        getCityKeyboard(provinceKey, true) // ← اینجا کیبورد شهرها رو می‌ده
+    );
 
     const results = await User.find({
         province: provinceKey,
@@ -128,6 +135,33 @@ bot.action(/search_province_.+/, async (ctx) => {
     await ctx.answerCbQuery(); // تایید callback بدون پیام
 
     await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceLabel}" پیدا شد.`);
+    await searchHandler(ctx); // نمایش اولین پروفایل
+});
+bot.action(/search_city_.+/, async (ctx) => {
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cityCode = (ctx.callbackQuery as any).data.replace("search_city_", "");
+
+    // کاربرهای همان شهر
+    const results = await User.find({
+        city: cityCode,
+        telegramId: { $ne: user.telegramId },
+        step: { $gte: 6 },
+    });
+
+    await ctx.answerCbQuery();
+
+    if (!results.length) {
+        return ctx.reply(`❌ هیچ پروفایلی در شهر "${cityCode}" پیدا نشد.`);
+    }
+
+    userSearchResults.set(user.telegramId, results);
+    userSearchIndex.set(user.telegramId, 0);
+
+    await ctx.reply(`✅ ${results.length} پروفایل در این شهر پیدا شد.`);
     await searchHandler(ctx); // نمایش اولین پروفایل
 });
 
