@@ -605,15 +605,21 @@ bot.on("photo", async (ctx) => {
 
     const chatWith = activeChats.get(user.telegramId);
     // ارسال به طرف مقابل اگر چت فعال است
+    // 📌 کاربر در حال چت است → عکس را بفرست به طرف مقابل
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const fileId = photo.file_id;
     if (chatWith) {
-        // 📌 کاربر در حال چت است → عکس را بفرست به طرف مقابل
-        const photo = ctx.message.photo[ctx.message.photo.length - 1];
-        const fileId = photo.file_id;
         // ذخیره در دیتابیس
+        // await Message.create({
+        //     from: user.telegramId,
+        //     to: chatWith || null,
+        //     fileId: fileId,
+        //     type: "photo",
+        // });
         await Message.create({
             from: user.telegramId,
-            to: chatWith || null,
-            fileId: fileId,
+            to: chatWith,
+            fileId,
             type: "photo",
         });
 
