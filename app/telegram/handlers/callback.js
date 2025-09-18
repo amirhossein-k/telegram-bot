@@ -91,8 +91,11 @@ export function callbackHandler() {
 
     // مرحله ۵: انتخاب شهر
     if (data.startsWith("profile_city_") && user?.step === 5) {
-      const [_, provinceCode, cityCode] = data.split("_"); // cityCode همان کلید شهر است
+      const parts = data.split("_");
+      const provinceCode = parts.slice(2, -1).join("_"); // azarbaijan_east
+      const cityCode = parts[parts.length - 1]; // tabriz
       user.city = cityCode;
+
       user.step = 6; // پروفایل تکمیل شد
       await user.save();
 
@@ -100,9 +103,9 @@ export function callbackHandler() {
       return ctx.reply(
         `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${
           user.gender
-        }\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${
-          cities[user.province][user.city]
-        }`,
+        }\n🎂 سن: ${user.age}\n📍 استان: ${
+          provinces[user.province] || user.province
+        }\n🏙 شهر: ${cities[provinceCode]?.[cityCode] || cityCode}`,
 
         {
           reply_markup: {
