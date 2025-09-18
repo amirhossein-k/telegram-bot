@@ -23,6 +23,7 @@ bot.start(startHandler()); // اینجا هندلر استارت جدید
 // bot.on("text", profileHandler());
 
 
+
 // ---- Callback ها برای مراحل ثبت پروفایل ----
 bot.action(/^(gender_|profile_province_|profile_city_)/, callbackHandler());
 bot.action(["edit_photos", "edit_profile", "terms", "upload_photos"], callbackHandler());
@@ -845,3 +846,4 @@ export async function POST(req: Request) {
 
 
 export default bot;
+export { activeChats };

@@ -5,6 +5,7 @@ import { getCityKeyboard } from "@/app/lib/cities";
 import { searchHandler } from "./searchHandler";
 import { cities } from "@/app/lib/cities";
 import { provinces } from "@/app/lib/provinces";
+import { activeChats } from "../bot";
 
 export function callbackHandler() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
