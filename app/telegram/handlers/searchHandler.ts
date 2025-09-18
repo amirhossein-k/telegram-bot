@@ -53,10 +53,12 @@ export async function searchHandler(ctx: any) {
     // else {
     //     await ctx.reply(`👤 ${targetUser.name}, ${targetUser.age} سال\n📍 ${targetUser.city}`);
     // }
+
+
     // متن پروفایل کامل
     const profileText = `
 👤 نام: ${targetUser.name || "-"}
-🚻 جنسیت: ${targetUser.gender || "-"}
+🚻 جنسیت:  ${targetUser.gender === "female" ? "زن" : "مرد"}
 🎂 سن: ${targetUser.age || "-"}
 📍 استان: ${targetUser.province || "-"}
 🏙 شهر: ${targetUser.city || "-"}
