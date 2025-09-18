@@ -723,6 +723,115 @@ bot.on("voice", async (ctx) => {
     });
 });
 
+
+// commands
+
+bot.command("show_profile", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) {
+        return ctx.reply("❌ شما در حال حاضر در یک چت فعال هستید. برای دسترسی به پروفایل ابتدا چت را قطع کنید.");
+    }
+
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    const urls = Object.values(user.photos).filter(Boolean) as string[];
+    if (urls.length > 0) {
+        const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
+            type: "photo",
+            media: url,
+            caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
+        }));
+        await ctx.replyWithMediaGroup(media);
+    }
+
+    let profileText = `
+👤 پروفایل شما:
+📝 نام: ${user.name || "-"}
+🚻 جنسیت: ${user.gender || "-"}
+🎂 سن: ${user.age || "-"}
+📍 استان: ${provinces[user.province] || "-"}
+🏙 شهر:  ${cities[user.province][user.city] || "-"}
+❤️ لایک‌های باقی‌مانده: ${user.isPremium ? "نامحدود" : user.likesRemaining}
+`;
+
+    profileText += `📝 درباره من\n${user.bio || "مشخص نشده"}\n\n`;
+    profileText += `🔎 دنبال چی هستم\n${user.lookingFor || "مشخص نشده"}\n\n`;
+    if (user.interests && user.interests.length > 0) {
+        profileText += `🍿 علایق و سرگرمی‌ها\n${user.interests.join("، ")}\n\n`;
+    } else {
+        profileText += `🍿 علایق و سرگرمی‌ها\nمشخص نشده\n\n`;
+    }
+
+    const buttons = [
+        [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+        [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+        [{ text: "🔍 جستجو بر اساس استان", callback_data: "search_by_province" }],
+        [{ text: "🎲 جستجوی تصادفی", callback_data: "search_random" }],
+        [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
+    ];
+
+    if (!user.isPremium) {
+        buttons.push([{ text: "⭐️ عضویت ویژه", callback_data: "buy_premium" }]);
+    }
+
+    return ctx.reply(profileText, { reply_markup: { inline_keyboard: buttons } });
+});
+
+bot.command("search_random", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) return ctx.reply("❌ ابتدا چت فعال را قطع کنید.");
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    const allUsers = await User.find({ telegramId: { $ne: user.telegramId } });
+    if (!allUsers.length) return ctx.reply("❌ هیچ پروفایلی برای نمایش نیست.");
+
+    const shuffled = allUsers.sort(() => 0.5 - Math.random());
+    userSearchResults.set(user.telegramId, shuffled);
+    userSearchIndex.set(user.telegramId, 0);
+
+    await searchHandler(ctx);
+});
+bot.command("liked_by_me", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (chatWith) return ctx.reply("❌ ابتدا چت فعال را قطع کنید.");
+    await connectDB();
+    const user = await User.findOne({ telegramId: ctx.from.id });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    if (!user.likedBy.length) return ctx.reply("❌ کسی شما را لایک نکرده");
+
+    const keyboard = [];
+    for (const id of user.likedBy) {
+        const u = await User.findOne({ telegramId: id });
+        if (u) keyboard.push([{ text: `👤 ${u.name}`, callback_data: `show_profile_${u.telegramId}` }]);
+    }
+
+    await ctx.reply("💌 کسانی که شما را لایک کردند:", { reply_markup: { inline_keyboard: keyboard } });
+});
+
+bot.command("buy_premium", async (ctx) => {
+    await ctx.reply("⭐️ عضویت ویژه\n\n✅ قیمت: 10,000 تومان\nبا خرید عضویت ویژه می‌توانید لایک نامحدود داشته باشید.", {
+        reply_markup: {
+            inline_keyboard: [[{ text: "💳 پرداخت", url: "https://your-payment-gateway.com/pay?amount=10000" }]]
+        }
+    });
+});
+bot.command("end_chat", async (ctx) => {
+    const chatWith = activeChats.get(ctx.from.id);
+    if (!chatWith) return ctx.reply("❌ شما در حال حاضر در چت فعال نیستید.");
+    await connectDB();
+    await Chat.updateOne(
+        { users: { $all: [ctx.from.id, chatWith] }, endedAt: { $exists: false } },
+        { $set: { endedAt: new Date() } }
+    );
+    activeChats.delete(ctx.from.id);
+    activeChats.delete(chatWith);
+    ctx.reply("❌ چت قطع شد.");
+});
 export async function POST(req: Request) {
     try {
         const body = await req.json();

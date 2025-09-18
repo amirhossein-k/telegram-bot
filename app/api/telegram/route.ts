@@ -16,16 +16,6 @@ export async function GET() {
     await bot.telegram.setWebhook(
       `${process.env.NEXT_PUBLIC_URL}/api/telegram`
     );
-    // تنظیم دستورات بات
-    await bot.telegram.setMyCommands([
-      { command: "start", description: "🚀 شروع کار با ربات" },
-      { command: "show_profile", description: "👤 مشاهده پروفایل خود" },
-      { command: "edit_profile", description: "✏️ ویرایش پروفایل و عکس‌ها" },
-      { command: "search", description: "🔍 جستجوی افراد جدید" },
-      { command: "liked_by_me", description: "💌 مشاهده کسانی که شما را لایک کردند" },
-      { command: "buy_premium", description: "⭐️ خرید عضویت ویژه" },
-      { command: "end_chat", description: "❌ قطع ارتباط در چت فعال" },
-    ]);
 
     return new Response("✅ Webhook set successfully", { status: 200 });
   } catch (err) {
