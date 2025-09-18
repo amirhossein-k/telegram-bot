@@ -83,8 +83,8 @@ export function profileHandler() {
                 break;
             case 5:      // 📍 مرحله ۵: انتخاب شهر
 
-                if (ctx.callbackQuery?.data?.startsWith("city_")) {
-                    const city = ctx.callbackQuery.data.replace("city_", "");
+                if (ctx.callbackQuery?.data?.startsWith("profile_city_")) {
+                    const city = ctx.callbackQuery.data.replace("profile_city_", "");
                     user.city = city;
                     user.step = 6; // پروفایل تکمیل شد
                     await user.save();

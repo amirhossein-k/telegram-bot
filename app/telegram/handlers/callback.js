@@ -73,8 +73,8 @@ export function callbackHandler() {
     }
 
     // مرحله ۴: انتخاب استان
-    if (data.startsWith("province_") && user?.step === 4) {
-      const province = data.replace("province_", "");
+    if (data.startsWith("profile_province_") && user?.step === 4) {
+      const province = data.replace("profile_province_", "");
       user.province = province;
       user.step = 5;
       await user.save();
@@ -87,7 +87,7 @@ export function callbackHandler() {
     }
 
     // مرحله ۵: انتخاب شهر
-    if (data.startsWith("city_") && user?.step === 5) {
+    if (data.startsWith("profile_city_") && user?.step === 5) {
       const [_, provinceCode, cityCode] = data.split("_");
       user.city = cityCode;
       user.step = 6; // پروفایل تکمیل شد
