@@ -1,82 +1,44 @@
-const provinces: Record<string, string> = {
-    azarbaijan_east: "آذربایجان شرقی",
-    azarbaijan_west: "آذربایجان غربی",
-    ardabil: "اردبیل",
-    esfahan: "اصفهان",
-    alborz: "البرز",
-    ilam: "ایلام",
-    bushehr: "بوشهر",
-    tehran: "تهران",
-    chaharmahal_bakhtiari: "چهارمحال و بختیاری",
-    khorasan_south: "خراسان جنوبی",
-    khorasan_razavi: "خراسان رضوی",
-    khorasan_north: "خراسان شمالی",
-    khuzestan: "خوزستان",
-    zanjan: "زنجان",
-    semnan: "سمنان",
-    sistan_baluchestan: "سیستان و بلوچستان",
-    fars: "فارس",
-    qazvin: "قزوین",
-    qom: "قم",
-    kordestan: "کردستان",
-    kerman: "کرمان",
-    kermanshah: "کرمانشاه",
-    kohgiluye_boyerahmad: "کهگیلویه و بویراحمد",
-    golestan: "گلستان",
-    gilan: "گیلان",
-    lorestan: "لرستان",
-    mazandaran: "مازندران",
-    markazi: "مرکزی",
-    hormozgan: "هرمزگان",
-    hamedan: "همدان",
-    yazd: "یزد",
+export const cities: { [provinceKey: string]: string[] } = {
+    azarbaijan_east: ["تبریز", "مراغه", "مرند", "اهر", "میانه"],
+    azarbaijan_west: ["ارومیه", "خوی", "مهاباد", "بوکان", "سلماس"],
+    ardabil: ["اردبیل", "پارس‌آباد", "مشگین‌شهر", "خلخال", "گرمی"],
+    esfahan: ["اصفهان", "کاشان", "نجف‌آباد", "خمینی‌شهر", "شاهین‌شهر"],
+    alborz: ["کرج", "فردیس", "نظرآباد", "هشتگرد", "اشتهارد"],
+    ilam: ["ایلام", "دهلران", "ایوان", "مهران", "دره‌شهر"],
+    bushehr: ["بوشهر", "برازجان", "کنگان", "گناوه", "دیلم"],
+    tehran: ["تهران", "شهریار", "اسلامشهر", "ورامین", "ری"],
+    chaharmahal_bakhtiari: ["شهرکرد", "بروجن", "فارسان", "لردگان", "فرخ‌شهر"],
+    khorasan_south: ["بیرجند", "قائن", "طبس", "نهبندان", "فردوس"],
+    khorasan_razavi: ["مشهد", "نیشابور", "سبزوار", "تربت حیدریه", "قوچان"],
+    khorasan_north: ["بجنورد", "شیروان", "اسفراین", "گرمه", "جاجرم"],
+    khuzestan: ["اهواز", "دزفول", "آبادان", "خرمشهر", "اندیمشک"],
+    zanjan: ["زنجان", "ابهر", "خرمدره", "قیدار", "هیدج"],
+    semnan: ["سمنان", "شاهرود", "دامغان", "گرمسار", "مهدیشهر"],
+    sistan_baluchestan: ["زاهدان", "چابهار", "ایرانشهر", "زابل", "سراوان"],
+    fars: ["شیراز", "مرودشت", "جهرم", "فسا", "کازرون"],
+    ghazvin: ["قزوین", "تاکستان", "الوند", "آبیک", "بوئین‌زهرا"],
+    qom: ["قم", "قنوات", "جعفریه", "کهک", "دستجرد"],
+    kordestan: ["سنندج", "سقز", "مریوان", "بانه", "قروه"],
+    kerman: ["کرمان", "رفسنجان", "سیرجان", "جیرفت", "بم"],
+    kermanshah: ["کرمانشاه", "اسلام‌آباد غرب", "کنگاور", "هرسین", "سنقر"],
+    kohgiluyeh_boyerahmad: ["یاسوج", "گچساران", "دهدشت", "سی‌سخت", "لیکک"],
+    golestan: ["گرگان", "گنبدکاووس", "علی‌آباد کتول", "مینودشت", "کلاله"],
+    gilan: ["رشت", "بندر انزلی", "لاهیجان", "لنگرود", "رودسر"],
+    loristan: ["خرم‌آباد", "بروجرد", "دورود", "الیگودرز", "کوهدشت"],
+    mazandaran: ["ساری", "بابل", "آمل", "قائم‌شهر", "بهشهر"],
+    markazi: ["اراک", "ساوه", "خمین", "محلات", "دلیجان"],
+    hormozgan: ["بندرعباس", "میناب", "قشم", "کیش", "بندر لنگه"],
+    hamedan: ["همدان", "ملایر", "نهاوند", "تویسرکان", "رزن"],
+    yazd: ["یزد", "میبد", "اردکان", "بافق", "تفت"],
 };
 
-const cities: Record<string, Record<string, string>> = {
-    azarbaijan_east: {
-        tabriz: "تبریز",
-        maragheh: "مراغه",
-        marand: "مرند",
-        aher: "اهر",
-        mianeh: "میانه",
-    },
-    azarbaijan_west: {
-        urmia: "ارومیه",
-        khoy: "خوی",
-        mahabad: "مهاباد",
-        bukan: "بوکان",
-        salmas: "سلماس",
-    },
-    ardabil: {
-        ardabil: "اردبیل",
-        parsabad: "پارس‌آباد",
-        meshginshahr: "مشگین‌شهر",
-        khalhal: "خلخال",
-        germi: "گرمی",
-    },
-    tehran: {
-        tehran: "تهران",
-        shahriar: "شهریار",
-        eslamshahr: "اسلامشهر",
-        varamin: "ورامین",
-        rey: "ری",
-    },
-    // سایر استان‌ها و شهرها مشابه...
-};
-
-// ساخت کیبورد تلگرام با callback_data استاندارد
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getCityKeyboard = (provinceCode: any) => {
-    const provinceCities = cities[provinceCode] || {};
+export function getCityKeyboard(provinceKey: string) {
+    const provinceCities = cities[provinceKey] || [];
     return {
         reply_markup: {
-            inline_keyboard: Object.entries(provinceCities).map(
-                ([cityCode, cityName]) => [
-                    { text: cityName, callback_data: `city_${provinceCode}_${cityCode}` },
-                ]
-            ),
+            inline_keyboard: provinceCities.map((city) => [
+                { text: city, callback_data: `city_${city}` },
+            ]),
         },
     };
-};
-
-export { provinces, cities, getCityKeyboard };
+}

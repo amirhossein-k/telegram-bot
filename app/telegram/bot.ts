@@ -11,7 +11,7 @@ import { searchHandler, userSearchIndex, userSearchResults } from "./handlers/se
 
 import Message from "@/app/model/Message";
 import Chat from "../model/Chat";
-import { getProvinceKeyboard } from "../lib/provinces";
+import { getProvinceKeyboard, provinces } from "../lib/provinces";
 const activeChats = new Map<number, number>();
 
 
@@ -110,26 +110,18 @@ bot.action(/search_province_.+/, async (ctx) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     // گرفتن نام استان از callback_data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const provinceName = (ctx.callbackQuery as any).data
-        .replace("search_province_", "")
-        .replace(/_/g, " ");
-
-    console.log("Searching for province:", provinceName);
-    const testAge = 23; // تست روی سن 23
-
-    // const results = await User.find({
-    //     province: { $regex: `^${provinceName}$`, $options: "i" },
-    //     telegramId: { $ne: user.telegramId },
-    //     step: { $gte: 6 }
-    // }).sort({ age: 1 });
+    const provinceKey = (ctx.callbackQuery as any).data.replace("search_province_", "");
+    const provinceLabel = provinces[provinceKey] || provinceKey;
 
     const results = await User.find({
-        age: testAge,
-        telegramId: { $ne: user.telegramId }, // خود کاربر را حذف کنیم
-        step: { $gte: 6 } // فقط کاربرانی که به مرحله 6 یا بالاتر رسیدند
+        province: provinceKey,
+        telegramId: { $ne: user.telegramId },
+        step: { $gte: 6 },
     });
+
+
     if (!results.length) {
-        return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceName}" یافت نشد.`);
+        if (!results.length) return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceLabel}" یافت نشد.`);
     }
 
     // ذخیره نتایج برای نمایش مرحله‌ای
@@ -137,7 +129,7 @@ bot.action(/search_province_.+/, async (ctx) => {
     userSearchIndex.set(user.telegramId, 0);
     await ctx.answerCbQuery(); // تایید callback بدون پیام
 
-    await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceName}" پیدا شد.`);
+    await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceLabel}" پیدا شد.`);
     await searchHandler(ctx); // نمایش اولین پروفایل
 });
 

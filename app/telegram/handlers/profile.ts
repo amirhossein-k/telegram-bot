@@ -1,8 +1,8 @@
 // app\telegram\handlers\profile.ts
 import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
-import { getProvinceKeyboard } from '@/app/lib/provinces'
-import { getCityKeyboard, provinces, cities } from "@/app/lib/cities";
+import { getProvinceKeyboard, provinces } from '@/app/lib/provinces'
+import { getCityKeyboard } from "@/app/lib/cities";
 
 export function profileHandler() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,32 +67,33 @@ export function profileHandler() {
                 }
             case 4: //استان
                 if (ctx.callbackQuery?.data?.startsWith("profile_province_")) {
-                    const province = ctx.callbackQuery.data.replace("profile_province_", "").replace(/_/g, " ");
-                    user.province = province;
+                    const provinceKey = ctx.callbackQuery.data.replace("profile_province_", "");
+                    user.province = provinceKey; // کلید انگلیسی ذخیره شود
+
+
                     user.step = 5;
                     await user.save();
 
                     await ctx.answerCbQuery();
                     return ctx.reply(
                         "📌 مرحله ۵ از ۵: شهرت رو انتخاب کن:",
-                        getCityKeyboard(province)
+                        getCityKeyboard(provinceKey)
                     );
                 }
                 break;
             case 5:      // 📍 مرحله ۵: انتخاب شهر
 
                 if (ctx.callbackQuery?.data?.startsWith("city_")) {
-                    const [_, provinceCode, cityCode] = ctx.callbackQuery.data.split("_");
-                    user.city = cityCode;
+                    const city = ctx.callbackQuery.data.replace("city_", "");
+                    user.city = city;
                     user.step = 6; // پروفایل تکمیل شد
                     await user.save();
-                    const provinceName = provinces[user.province];   // نام فارسی استان
-                    const cityName = cities[user.province]?.[user.city]; // نام فارسی شهر
+
                     await ctx.answerCbQuery("پروفایل شما کامل شد!");
 
                     return ctx.telegram.sendMessage(
                         ctx.chat.id,
-                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${provinceName}\n🏙 شهر: ${cityName}`
+                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${user.city}`
                         , {
                             reply_markup: {
                                 inline_keyboard: [
