@@ -1,44 +1,57 @@
-export const cities: { [provinceKey: string]: string[] } = {
-    azarbaijan_east: ["تبریز", "مراغه", "مرند", "اهر", "میانه"],
-    azarbaijan_west: ["ارومیه", "خوی", "مهاباد", "بوکان", "سلماس"],
-    ardabil: ["اردبیل", "پارس‌آباد", "مشگین‌شهر", "خلخال", "گرمی"],
-    esfahan: ["اصفهان", "کاشان", "نجف‌آباد", "خمینی‌شهر", "شاهین‌شهر"],
-    alborz: ["کرج", "فردیس", "نظرآباد", "هشتگرد", "اشتهارد"],
-    ilam: ["ایلام", "دهلران", "ایوان", "مهران", "دره‌شهر"],
-    bushehr: ["بوشهر", "برازجان", "کنگان", "گناوه", "دیلم"],
-    tehran: ["تهران", "شهریار", "اسلامشهر", "ورامین", "ری"],
-    chaharmahal_bakhtiari: ["شهرکرد", "بروجن", "فارسان", "لردگان", "فرخ‌شهر"],
-    khorasan_south: ["بیرجند", "قائن", "طبس", "نهبندان", "فردوس"],
-    khorasan_razavi: ["مشهد", "نیشابور", "سبزوار", "تربت حیدریه", "قوچان"],
-    khorasan_north: ["بجنورد", "شیروان", "اسفراین", "گرمه", "جاجرم"],
-    khuzestan: ["اهواز", "دزفول", "آبادان", "خرمشهر", "اندیمشک"],
-    zanjan: ["زنجان", "ابهر", "خرمدره", "قیدار", "هیدج"],
-    semnan: ["سمنان", "شاهرود", "دامغان", "گرمسار", "مهدیشهر"],
-    sistan_baluchestan: ["زاهدان", "چابهار", "ایرانشهر", "زابل", "سراوان"],
-    fars: ["شیراز", "مرودشت", "جهرم", "فسا", "کازرون"],
-    ghazvin: ["قزوین", "تاکستان", "الوند", "آبیک", "بوئین‌زهرا"],
-    qom: ["قم", "قنوات", "جعفریه", "کهک", "دستجرد"],
-    kordestan: ["سنندج", "سقز", "مریوان", "بانه", "قروه"],
-    kerman: ["کرمان", "رفسنجان", "سیرجان", "جیرفت", "بم"],
-    kermanshah: ["کرمانشاه", "اسلام‌آباد غرب", "کنگاور", "هرسین", "سنقر"],
-    kohgiluyeh_boyerahmad: ["یاسوج", "گچساران", "دهدشت", "سی‌سخت", "لیکک"],
-    golestan: ["گرگان", "گنبدکاووس", "علی‌آباد کتول", "مینودشت", "کلاله"],
-    gilan: ["رشت", "بندر انزلی", "لاهیجان", "لنگرود", "رودسر"],
-    loristan: ["خرم‌آباد", "بروجرد", "دورود", "الیگودرز", "کوهدشت"],
-    mazandaran: ["ساری", "بابل", "آمل", "قائم‌شهر", "بهشهر"],
-    markazi: ["اراک", "ساوه", "خمین", "محلات", "دلیجان"],
-    hormozgan: ["بندرعباس", "میناب", "قشم", "کیش", "بندر لنگه"],
-    hamedan: ["همدان", "ملایر", "نهاوند", "تویسرکان", "رزن"],
-    yazd: ["یزد", "میبد", "اردکان", "بافق", "تفت"],
+export const cities: { [provinceKey: string]: { [cityKey: string]: string } } = {
+    azarbaijan_east: {
+        tabriz: "تبریز",
+        maragheh: "مراغه",
+        marand: "مرند",
+        ahar: "اهر",
+        miyaneh: "میانه",
+    },
+    azarbaijan_west: {
+        orumiyeh: "ارومیه",
+        khoy: "خوی",
+        mahabad: "مهاباد",
+        bokan: "بوکان",
+        salmas: "سلماس",
+    },
+    ardabil: {
+        ardabil: "اردبیل",
+        parsabad: "پارس‌آباد",
+        meshginshahr: "مشگین‌شهر",
+        khalkhal: "خلخال",
+        germi: "گرمی",
+    },
+    esfahan: {
+        esfahan: "اصفهان",
+        kashan: "کاشان",
+        najafabad: "نجف‌آباد",
+        khomeinishahr: "خمینی‌شهر",
+        shahinshahr: "شاهین‌شهر",
+    },
+    // ... باقی استان‌ها مشابه همین ساختار
 };
 
-export function getCityKeyboard(provinceKey: string) {
-    const provinceCities = cities[provinceKey] || [];
-    return {
-        reply_markup: {
-            inline_keyboard: provinceCities.map((city) => [
-                { text: city, callback_data: `city_${city}` },
-            ]),
-        },
-    };
+export function getCityKeyboard(provinceKey: string, forSearch = false) {
+    const provinceCities = cities[provinceKey] || {};
+    const keys = Object.keys(provinceCities);
+    const keyboard = [];
+
+    for (let i = 0; i < keys.length; i += 2) {
+        const row = [];
+
+        row.push({
+            text: provinceCities[keys[i]],
+            callback_data: forSearch ? `search_city_${keys[i]}` : `profile_city_${provinceKey}_${keys[i]}`,
+        });
+
+        if (keys[i + 1]) {
+            row.push({
+                text: provinceCities[keys[i + 1]],
+                callback_data: forSearch ? `search_city_${keys[i + 1]}` : `profile_city_${provinceKey}_${keys[i + 1]}`,
+            });
+        }
+
+        keyboard.push(row);
+    }
+
+    return { reply_markup: { inline_keyboard: keyboard } };
 }

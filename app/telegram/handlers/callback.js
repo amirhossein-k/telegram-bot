@@ -73,22 +73,25 @@ export function callbackHandler() {
     }
 
     // مرحله ۴: انتخاب استان
-    if (data.startsWith("profile_province_") && user?.step === 4) {
-      const province = data.replace("profile_province_", "");
-      user.province = province;
+    if (
+      ctx.callbackQuery?.data.startsWith("profile_province_") &&
+      user?.step === 4
+    ) {
+      const provinceKey = data.replace("profile_province_", "");
+      user.province = provinceKey;
       user.step = 5;
       await user.save();
 
       await ctx.answerCbQuery();
       return ctx.reply(
         "📌 مرحله ۵ از ۵: شهرت رو انتخاب کن:",
-        getCityKeyboard(province)
+        getCityKeyboard(provinceKey)
       );
     }
 
     // مرحله ۵: انتخاب شهر
     if (data.startsWith("profile_city_") && user?.step === 5) {
-      const [_, provinceCode, cityCode] = data.split("_");
+      const [_, provinceCode, cityCode] = data.split("_"); // cityCode همان کلید شهر است
       user.city = cityCode;
       user.step = 6; // پروفایل تکمیل شد
       await user.save();
@@ -100,6 +103,7 @@ export function callbackHandler() {
         }\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${
           cities[user.province][user.city]
         }`,
+
         {
           reply_markup: {
             inline_keyboard: [
