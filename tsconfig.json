@@ -31,7 +31,8 @@
     "app/telegram/handlers/start.js",
     "app/telegram/handlers/ping.js",
     "app/telegram/handlers/photo.js",
-    "app/telegram/handlers/callback.js"
+    "app/telegram/handlers/callback.js",
+    "scripts/seedUsers.mts"
   ],
   "exclude": ["node_modules"]
 }

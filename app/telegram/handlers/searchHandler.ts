@@ -22,8 +22,10 @@ export async function searchHandler(ctx: any) {
         // پیدا کردن کاربران دیگر بر اساس شهر و مرتب‌سازی بر اساس سن
         results = await User.find({
             telegramId: { $ne: user.telegramId }, // کاربر خودشو حذف کن
-            city: user.city,
-            step: { $gte: 6 } // فقط پروفایل کامل شده
+            // city: user.city,
+            step: { $gte: 6 },// فقط پروفایل کامل شده
+            gender: user.gender === "زن" ? "مرد" : "زن" // جنسیت مخالف
+
         }).sort({ age: 1 }); // سن صعودی
 
         if (!results.length) return ctx.reply("❌ هیچ پروفایلی پیدا نشد.");

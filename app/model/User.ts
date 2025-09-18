@@ -1,6 +1,7 @@
 // app\model\User.ts
-import { Schema, models, model } from "mongoose";
+import mongoose from "mongoose";
 
+const { Schema, model, models } = mongoose
 const userSchema = new Schema(
     {
         telegramId: { type: Number, required: true, unique: true },
