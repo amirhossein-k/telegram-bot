@@ -623,14 +623,14 @@ bot.on("text", async (ctx) => {
     // --- جلوگیری از ارسال متن انگلیسی ---
     const englishRegex = /[A-Za-z]/g;
 
-    if (iranPhoneRegex.test(message) || telegramIdRegex.test(message)) {
-        return ctx.reply("❌ ارسال شماره تماس یا آیدی تلگرام مجاز نیست.");
-    }
-    if (englishRegex.test(message)) {
-        return ctx.reply("❌ ارسال پیام به زبان انگلیسی مجاز نیست. لطفاً فارسی تایپ کنید.");
-    }
 
     if (chatWith) {
+        if (iranPhoneRegex.test(message) || telegramIdRegex.test(message)) {
+            return ctx.reply("❌ ارسال شماره تماس یا آیدی تلگرام مجاز نیست.");
+        }
+        if (englishRegex.test(message)) {
+            return ctx.reply("❌ ارسال پیام به زبان انگلیسی مجاز نیست. لطفاً فارسی تایپ کنید.");
+        }
 
         // ذخیره در دیتابیس
         await Message.create({
