@@ -11,7 +11,7 @@ const userSchema = new Schema(
         step: { type: Number, default: 1 }, // تغییر به default = 1
 
         name: String,
-        gender: { type: String, enum: ["مرد", "زن"] },
+        gender: { type: String, enum: ["male", "female"] },
         age: Number,
         province: String,
         city: String,

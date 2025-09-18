@@ -74,7 +74,7 @@ export function callbackHandler() {
 
     // مرحله ۲: انتخاب جنسیت
     if (data.startsWith("gender_") && user?.step === 2) {
-      user.gender = data === "gender_male" ? "مرد" : "زن";
+      user.gender = data === "gender_male" ? "male" : "female"; // تغییر به انگلیسی
       user.step = 3;
       await user.save();
 
@@ -111,14 +111,16 @@ export function callbackHandler() {
       user.city = cityCode;
       user.step = 6; // پروفایل تکمیل شد
       await user.save();
+      const genderText =
+        user.gender === "male" ? "مرد" : user.gender === "female" ? "زن" : "-";
 
       ctx.answerCbQuery("✅ شهرت انتخاب شد!").catch(() => {});
       return ctx.reply(
-        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${
-          user.gender
-        }\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${
-          cities[user.province][user.city]
-        }`,
+        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${
+          user.name
+        }\n👫 جنسیت: ${genderText}\n🎂 سن: ${user.age}\n📍 استان: ${
+          provinces[user.province]
+        }\n🏙 شهر: ${cities[user.province][user.city]}`,
 
         {
           reply_markup: {

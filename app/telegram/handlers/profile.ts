@@ -46,8 +46,8 @@ export function profileHandler() {
             // ♂♀ مرحله ۲: گرفتن جنسیت (callback)
             case 2:
                 if (ctx.callbackQuery?.data?.startsWith("gender_")) {
-                    const gender =
-                        ctx.callbackQuery.data === "gender_male" ? "مرد" : "زن";
+                    const gender = ctx.callbackQuery.data === "gender_male" ? "male" : "female";
+
                     user.gender = gender;
                     user.step = 3;
                     await user.save();
@@ -93,13 +93,15 @@ export function profileHandler() {
                     user.city = cityCode;
 
                     user.step = 6; // پروفایل تکمیل شد
+                    const genderText = user.gender === "male" ? "مرد" : user.gender === "female" ? "زن" : "-";
+
                     await user.save();
 
                     await ctx.answerCbQuery("پروفایل شما کامل شد!");
 
                     return ctx.telegram.sendMessage(
                         ctx.chat.id,
-                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender
+                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${genderText
                         }\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${cities[user.province][user.city]
                         }`, {
                         reply_markup: {
@@ -142,11 +144,12 @@ export async function sendProfile(ctx: any, targetId?: number) {
         }));
         await ctx.replyWithMediaGroup(media);
     }
+    const genderText = user.gender === "male" ? "مرد" : user.gender === "female" ? "زن" : "-";
 
     let profileText = `
 👤 پروفایل شما:
 📝 نام: ${user.name || "-"}
-🚻 جنسیت: ${user.gender || "-"}
+🚻 جنسیت: ${genderText || "-"}
 🎂 سن: ${user.age || "-"}
 📍 استان: ${provinces[user.province] || "-"}
 🏙 شهر:  ${cities[user.province][user.city] || "-"}
