@@ -113,26 +113,26 @@ bot.action(/search_province_.+/, async (ctx) => {
     const provinceLabel = provinces[provinceKey] || provinceKey;
     await ctx.answerCbQuery();
 
-    return ctx.reply(
+    // اول شهرها رو نشون بده
+    await ctx.reply(
         `🏙 شهر مورد نظر در استان "${provinceLabel}" را انتخاب کن:`,
-        getCityKeyboard(provinceKey, true) // ← اینجا کیبورد شهرها رو می‌ده
+        getCityKeyboard(provinceKey, true)
     );
 
+    // بعد نتایج رو آماده کن
     const results = await User.find({
         province: provinceKey,
         telegramId: { $ne: user.telegramId },
         step: { $gte: 6 },
     });
 
-
     if (!results.length) {
-        if (!results.length) return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceLabel}" یافت نشد.`);
+        return ctx.reply(`❌ هیچ پروفایلی در استان "${provinceLabel}" یافت نشد.`);
     }
 
     // ذخیره نتایج برای نمایش مرحله‌ای
     userSearchResults.set(user.telegramId, results);
     userSearchIndex.set(user.telegramId, 0);
-    await ctx.answerCbQuery(); // تایید callback بدون پیام
 
     await ctx.reply(`✅ ${results.length} پروفایل در استان "${provinceLabel}" پیدا شد.`);
     await searchHandler(ctx); // نمایش اولین پروفایل
