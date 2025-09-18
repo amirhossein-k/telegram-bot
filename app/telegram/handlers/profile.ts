@@ -61,7 +61,7 @@ export function profileHandler() {
                     user.step = 4
                     await user.save()
 
-                    return ctx.reply("📌 مرحله ۴ از ۵: استانت رو انتخاب کن:", getProvinceKeyboard());
+                    return ctx.reply("📌 مرحله ۴ از ۵: استانت رو انتخاب کن:", getProvinceKeyboard(false));
                 } else {
                     return ctx.reply("❌ لطفاً یک عدد معتبر بفرست.");
                 }
@@ -90,11 +90,12 @@ export function profileHandler() {
                     await user.save();
 
                     await ctx.answerCbQuery("پروفایل شما کامل شد!");
+                    const provinceName = provinces[user.province] || user.province;
 
                     return ctx.telegram.sendMessage(
                         ctx.chat.id,
-                        `✅ پروفایلت ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${provinces[user.province]}\n🏙 شهر: ${user.city}`
-                        , {
+                        `✅ پروفایل شما ساخته شد!\n\n👤 نام: ${user.name}\n👫 جنسیت: ${user.gender}\n🎂 سن: ${user.age}\n📍 استان: ${provinceName}\n🏙 شهر: ${user.city}`,
+                        {
                             reply_markup: {
                                 inline_keyboard: [
                                     [{ text: "👤 پروفایل من", callback_data: "show_profile" }],
