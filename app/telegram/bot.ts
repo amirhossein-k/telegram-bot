@@ -53,17 +53,27 @@ bot.action("show_profile", async (ctx) => {
 
 
     // متن پروفایل
-    const profileText = `
+    let profileText = `
 👤 پروفایل شما:
 
 📝 نام: ${user.name || "-"}
 🚻 جنسیت: ${user.gender || "-"}
 🎂 سن: ${user.age || "-"}
-📍 استان: ${user.province || "-"}
-🏙 شهر: ${user.city || "-"}
+📍 استان: ${provinces[user.province] || "-"}
+🏙 شهر:  ${cities[user.province][user.city] || "-"}
 ❤️ لایک‌های باقی‌مانده: ${user.isPremium ? "نامحدود" : user.likesRemaining}
 
 `;
+    profileText += `📝 درباره من\n${user.bio || "مشخص نشده"}\n\n`;
+    profileText += `🔎 دنبال چی هستم\n${user.lookingFor || "مشخص نشده"}\n\n`;
+    if (user.interests && user.interests.length > 0) {
+        profileText += `🍿 علایق و سرگرمی‌ها\n${user.interests.join("، ")}\n\n`;
+    } else {
+        profileText += `🍿 علایق و سرگرمی‌ها\nمشخص نشده\n\n`;
+    }
+
+
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const buttons: any[] = [
         [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
@@ -594,18 +604,18 @@ bot.on("photo", async (ctx) => {
     if (!user) return;
 
     const chatWith = activeChats.get(user.telegramId);
-    // 📌 کاربر در حال چت است → عکس را بفرست به طرف مقابل
-    const photo = ctx.message.photo[ctx.message.photo.length - 1];
-    const fileId = photo.file_id;
-    // ذخیره در دیتابیس
-    await Message.create({
-        from: user.telegramId,
-        to: chatWith || null,
-        fileId: fileId,
-        type: "photo",
-    });
     // ارسال به طرف مقابل اگر چت فعال است
     if (chatWith) {
+        // 📌 کاربر در حال چت است → عکس را بفرست به طرف مقابل
+        const photo = ctx.message.photo[ctx.message.photo.length - 1];
+        const fileId = photo.file_id;
+        // ذخیره در دیتابیس
+        await Message.create({
+            from: user.telegramId,
+            to: chatWith || null,
+            fileId: fileId,
+            type: "photo",
+        });
 
 
         // ارسال به طرف مقابل

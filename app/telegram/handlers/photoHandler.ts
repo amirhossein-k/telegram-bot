@@ -64,6 +64,7 @@ export function photoUploadHandler() {
             await connectDB();
             const user = await User.findOne({ telegramId: ctx.from.id });
             if (!user) return ctx.reply("❌ لطفاً ابتدا پروفایل خود را ایجاد کنید.");
+            console.log("👉 photoUploadHandler triggered for", ctx.from.id);
 
             const slot = user.awaitingPhotoSlot;
             if (!slot) {
