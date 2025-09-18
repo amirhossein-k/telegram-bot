@@ -1,3 +1,4 @@
+// app\model\User.ts
 import { Schema, models, model } from "mongoose";
 
 const userSchema = new Schema(
@@ -30,9 +31,10 @@ const userSchema = new Schema(
         isPremium: { type: Boolean, default: false },  // آیا کاربر عضویت ویژه دارد؟
         premiumUntil: { type: Date, default: null },   // تاریخ پایان عضویت ویژه
 
-        bio: String,
-        interests: String,
-        lookingFor: String,
+        bio: { type: String, default: "" },
+        interests: { type: [String], default: [] },
+
+        lookingFor: { type: String, default: "" },
     },
     { timestamps: true }
 );
