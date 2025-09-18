@@ -3,6 +3,7 @@ import { connectDB } from "@/app/lib/mongodb";
 import User from "@/app/model/User";
 import { getProvinceKeyboard, provinces } from '@/app/lib/provinces'
 import { cities, getCityKeyboard } from "@/app/lib/cities";
+import { InputMediaPhoto } from "typegram";
 
 export function profileHandler() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,4 +123,50 @@ export function profileHandler() {
 
     }
 
+}
+
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function sendProfile(ctx: any, targetId?: number) {
+    await connectDB();
+    const userId = targetId || ctx.from.id;
+    const user = await User.findOne({ telegramId: userId });
+    if (!user) return ctx.reply("❌ پروفایل پیدا نشد");
+
+    const urls = Object.values(user.photos).filter(Boolean) as string[];
+    if (urls.length > 0) {
+        const media: InputMediaPhoto<string>[] = urls.map((url, idx) => ({
+            type: "photo",
+            media: url,
+            caption: idx === 0 ? "📸 عکس‌های شما" : undefined,
+        }));
+        await ctx.replyWithMediaGroup(media);
+    }
+
+    let profileText = `
+👤 پروفایل شما:
+📝 نام: ${user.name || "-"}
+🚻 جنسیت: ${user.gender || "-"}
+🎂 سن: ${user.age || "-"}
+📍 استان: ${provinces[user.province] || "-"}
+🏙 شهر:  ${cities[user.province][user.city] || "-"}
+❤️ لایک‌های باقی‌مانده: ${user.isPremium ? "نامحدود" : user.likesRemaining}
+`;
+
+    profileText += `📝 درباره من\n${user.bio || "مشخص نشده"}\n\n`;
+    profileText += `🔎 دنبال چی هستم\n${user.lookingFor || "مشخص نشده"}\n\n`;
+    if (user.interests?.length) profileText += `🍿 علایق و سرگرمی‌ها\n${user.interests.join("، ")}\n\n`;
+    else profileText += `🍿 علایق و سرگرمی‌ها\nمشخص نشده\n\n`;
+
+    const buttons = [
+        [{ text: "🖼 ویرایش عکس‌ها", callback_data: "edit_photos" }],
+        [{ text: "✏️ ویرایش پروفایل", callback_data: "edit_profile" }],
+        [{ text: "🔍 جستجو بر اساس استان", callback_data: "search_by_province" }],
+        [{ text: "🎲 جستجوی تصادفی", callback_data: "search_random" }],
+        [{ text: "💌 کسانی که مرا لایک کردند", callback_data: "liked_by_me" }],
+    ];
+
+    if (!user.isPremium) buttons.push([{ text: "⭐️ عضویت ویژه", callback_data: "buy_premium" }]);
+
+    await ctx.reply(profileText, { reply_markup: { inline_keyboard: buttons } });
 }
